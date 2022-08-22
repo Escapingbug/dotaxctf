@@ -1,10 +1,10 @@
 -- Generated from template
+require("config")
+require("rounds")
 
 if CAddonTemplateGameMode == nil then
 	CAddonTemplateGameMode = class({})
 end
-
-HeroAdded = false
 
 function Precache(context)
 	--[[
@@ -21,34 +21,21 @@ function Activate()
 	GameRules.AddonTemplate = CAddonTemplateGameMode()
 	GameRules.AddonTemplate:InitGameMode()
 
-	print("dtjdtjdtjdtj")
+	print("Game Activate")
 end
 
 function CAddonTemplateGameMode:InitGameMode()
 	print( "Template addon is loaded." )
+	Rounds:InitGameMode()
 	GameRules:GetGameModeEntity():SetThink( "OnThink", self, "GlobalThink", 2 )
 end
 
 -- Evaluate the state of the game
 function CAddonTemplateGameMode:OnThink()
 	if GameRules:State_Get() == DOTA_GAMERULES_STATE_GAME_IN_PROGRESS then
-		GameOnProgress()
+		Rounds:BeginGame()
 	elseif GameRules:State_Get() >= DOTA_GAMERULES_STATE_POST_GAME then
 		return nil
 	end
 	return 1
-end
-
-function GameOnProgress()
-	if HeroAdded == false  then
-		GameRules:AddBotPlayerWithEntityScript(
-			"npc_dota_hero_abaddon",
-			"testname",
-			DOTA_TEAM_NOTEAM,
-			"bot/test_bot.lua",
-			true
-		)
-		HeroAdded = true
-	end
-	
 end
