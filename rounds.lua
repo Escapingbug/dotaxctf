@@ -48,23 +48,16 @@ end
 
 function Rounds:BeginGame()
     if not self.game_started then
+        -- TODO: use add bot player with entity script to add
+        -- player so that we can listen to last hit to add
+        -- the score.
+        -- Explain: last_hit can only get you the player id instead
+        -- of the entity id.
 
         ListenToGameEvent("last_hit", function (event)
             local entity_killed = event["EntKilled"]
             local player_id = event["PlayerID"]
             print("got last hit! " .. entity_killed .. " " .. player_id)
-        end, nil)
-
-        ListenToGameEvent("entity_hurt", function (event)
-            local killed = event["entindex_killed"]
-            local attacker = event["entindex_attacker"]
-            print("entity hurt " .. killed .. " " .. attacker)
-        end, nil)
-
-        ListenToGameEvent("dota_player_kill", function (event)
-            local killer = event["killer1_userid"]
-            local victim = event["victim_userid"]
-            print("dota player kill " .. killer .. " " .. victim)
         end, nil)
 
         Rounds:PrepareBeginRound()
