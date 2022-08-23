@@ -7,10 +7,14 @@ function Config:Init()
 
     self.extra_score_for_winner = 1
     self.teams = {
-        [1] = "team1",
-        [2] = "team2",
+        [19] = "team1",
+        [20] = "team2",
     }
-    self.round_time = 10
+    self.round_time = 60
+    self.hero_locations = {
+        [19] = Vector(100, 100),
+        [20] = Vector(200, 100)
+    }
 end
 
 if not Config.config_inited then Config:Init() end
