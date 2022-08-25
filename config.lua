@@ -20,6 +20,9 @@ function Config:Init()
         [19] = Vector(100, 100),
         [20] = Vector(200, 100)
     }
+    -- how many seconds to wait after choosing hero
+    -- and action
+    self.round_begin_delay = 3
 end
 
 if not Config.config_inited then Config:Init() end

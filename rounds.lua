@@ -127,7 +127,12 @@ function Rounds:NextRound(scripts)
 
     Rounds:CleanupLivingHeros()
     Rounds:ChooseHeros(scripts["chooser_scripts"])
-    Rounds:BeginRound(scripts["bot_scripts"])
+    Timers:CreateTimer(
+        Config.round_begin_delay,
+        function ()
+            Rounds:BeginRound(scripts["bot_scripts"])
+        end
+    )
 end
 
 function Rounds:InitTeamHero(hero)
@@ -263,10 +268,57 @@ function Rounds:BeginRound(bot_scripts)
     Msg(round_hint)
 
     Timers:CreateTimer(
-        Config.round_time,
-        function()
-            Rounds:PrepareBeginRound()
-        end
+        "round_limit_timer",
+        {
+            endTime = Config.round_time,
+            callback = function ()
+                Timers:RemoveTimer("round_periodic_timer")
+                Rounds:PrepareBeginRound()
+            end
+        }
+    )
+
+    Timers:CreateTimer(
+        "round_periodic_timer",
+        {
+            endTime = 1,
+            callback = function()
+                local round_over = false
+
+                -- count team alive heros
+                local team_alive_counts = {}
+                for team_id, _ in ipairs(AVAILABLE_TEAMS) do
+                    team_alive_counts[team_id] = 0
+                end
+                for team_num, _ in pairs(Config.teams) do
+                    local hero = self.heros[team_num]
+                    if hero:IsAlive() then
+                        local team = hero:GetTeam()
+                        team_alive_counts[team] = team_alive_counts[team] + 1
+                    end
+                end
+
+                -- when less than one team got alive heros, round should be over
+                local alive_team_counts = 0
+                for _, alives in pairs(team_alive_counts) do
+                    if alives > 0 then
+                        alive_team_counts = alive_team_counts + 1
+                    end
+                end
+
+                if alive_team_counts <= 1 then
+                    round_over = true
+                end
+
+                if round_over then
+                    Timers:RemoveTimer("round_limit_timer")
+                    Rounds:PrepareBeginRound()
+                    return
+                else
+                    return 1
+                end
+            end
+        }
     )
 
     for team_num, team_name in pairs(Config.teams) do
