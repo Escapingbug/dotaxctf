@@ -257,6 +257,11 @@ end
 
 function Rounds:BeginRound(bot_scripts)
 
+    local round_hint = "Round #" .. self.round_count .. "begins!!"
+    -- TODO: How to display the message??
+    -- this is not working :(
+    Msg(round_hint)
+
     Timers:CreateTimer(
         Config.round_time,
         function()
