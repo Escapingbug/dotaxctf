@@ -40,7 +40,7 @@ end
 
 function Rounds:InitGameMode()
     print("Rounds:InitGameMode...")
-
+    GameRules:GetGameModeEntity():SetAlwaysShowPlayerNames(true)
     -- for faster entering
 	GameRules:SetPreGameTime(3.0)
 
@@ -144,6 +144,23 @@ function Rounds:PrepareRoundPlayerScripts(on_done)
     
     local sample_bot_code = [[
     return function (entity)
+        if entity:IsAttacking() then
+            return
+        end
+        local units = FindUnitsInRadius(
+            entity:GetTeam(),
+            Vector(200, 200),
+            nil,
+            300.0,
+            DOTA_UNIT_TARGET_TEAM_ENEMY,
+            DOTA_UNIT_TARGET_HERO,
+            DOTA_UNIT_TARGET_FLAG_NONE,
+            FIND_ANY_ORDER,
+            false
+        )
+        if #units > 0 then
+            entity:MoveToTargetToAttack(units[1])
+        end
     end
 ]]
 

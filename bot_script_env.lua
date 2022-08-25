@@ -4,12 +4,14 @@ if BotScriptEnv == nil then
 end
 
 function BotScript:Init(script_content)
-    local run_bot_func = load(script_content)
+    print("run bot script: " .. script_content)
+    local run_bot_func, err = load(script_content)
+    self.ctx = {}
     if run_bot_func then
         print("got run bot")
         self.run_bot = run_bot_func()
     else
-        print("run bot func is nil!!")
+        print("run bot func is nil!! " .. err)
         self.run_bot = nil
     end
 end
@@ -25,7 +27,7 @@ function BotScript:OnThink(entity)
     end
 
     local sandboxed_entity = self:Sandbox(entity)
-    self.run_bot(sandboxed_entity)
+    self.ctx = self.run_bot(sandboxed_entity, self.ctx)
     return 0.1
 end
 
