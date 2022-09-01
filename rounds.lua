@@ -61,8 +61,7 @@ function Rounds:CleanupLivingHeros()
             self.scores_this_round[team_num] = team_score + Config.extra_score_for_winner
         end
 
-        -- FIXME: why the body is not gone??
-        hero:ForceKill(true)
+        hero:RemoveSelf()
     end
 
     self.heros = {}
