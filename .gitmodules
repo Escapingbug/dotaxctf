@@ -1,0 +1,3 @@
+[submodule "sandbox"]
+	path = lib/lua-sandbox
+	url = git@github.com:liangjs/lua-sandbox.git

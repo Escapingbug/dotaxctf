@@ -4,8 +4,9 @@ if BotScriptEnv == nil then
 end
 
 function BotScript:Init(script_content)
-    self.ctx = {}
+    print("bot script: " .. script_content)
     self.run_bot = Sandbox:LoadActionScript(script_content)
+    self.ctx = {}
 end
 
 function BotScript:OnThink(entity)

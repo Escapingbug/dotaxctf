@@ -1,5 +1,16 @@
+lua_sandbox = require("lib/lua-sandbox/sandbox")
+
 if Sandbox == nil then
     Sandbox = class({})
+end
+
+function Sandbox:Init()
+    self.game_info = {}
+    self.init = true
+end
+
+function Sandbox:SetupGameInfo(game_info)
+    self.game_info = game_info
 end
 
 function Sandbox:LoadChooseHeroScript(user_script)
@@ -27,5 +38,7 @@ function Sandbox:RunAction(act_func, entity, ctx)
     local sandboxed_entity = Sandbox:SandboxEntity(entity)
     return act_func(sandboxed_entity, ctx)
 end
+
+if not Sandbox.init then Sandbox:Init() end
 
 GameRules.Sandbox = Sandbox
