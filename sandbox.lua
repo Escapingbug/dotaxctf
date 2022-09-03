@@ -4,7 +4,7 @@ end
 
 function Sandbox:LoadChooseHeroScript(user_script)
     -- TODO: real sandbox
-    return load(user_script)()
+    return load(user_script)
 end
 
 function Sandbox:LoadActionScript(user_script)
@@ -18,6 +18,7 @@ function Sandbox:SandboxEntity(entity)
 end
 
 function Sandbox:RunChooseHero(choose_func, round_count)
+    -- TODO: real sandbox
     return choose_func(round_count)
 end
 

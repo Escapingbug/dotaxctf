@@ -141,30 +141,28 @@ end
 function Rounds:PrepareRoundPlayerScripts(on_done)
     -- TODO: real http access to the player scripts
     local sample_choose_hero_code = [[
-    return function (round)
-        return "npc_dota_hero_axe"
-    end
+    local round = ...
+    return "npc_dota_hero_axe"
 ]]
     
     local sample_bot_code = [[
-    return function (entity)
-        if entity:IsAttacking() then
-            return
-        end
-        local units = FindUnitsInRadius(
-            entity:GetTeam(),
-            Vector(200, 200),
-            nil,
-            300.0,
-            DOTA_UNIT_TARGET_TEAM_ENEMY,
-            DOTA_UNIT_TARGET_HERO,
-            DOTA_UNIT_TARGET_FLAG_NONE,
-            FIND_ANY_ORDER,
-            false
-        )
-        if #units > 0 then
-            entity:MoveToTargetToAttack(units[1])
-        end
+    local entity = ...
+    if entity:IsAttacking() then
+        return
+    end
+    local units = FindUnitsInRadius(
+        entity:GetTeam(),
+        Vector(200, 200),
+        nil,
+        300.0,
+        DOTA_UNIT_TARGET_TEAM_ENEMY,
+        DOTA_UNIT_TARGET_HERO,
+        DOTA_UNIT_TARGET_FLAG_NONE,
+        FIND_ANY_ORDER,
+        false
+    )
+    if #units > 0 then
+        entity:MoveToTargetToAttack(units[1])
     end
 ]]
 
