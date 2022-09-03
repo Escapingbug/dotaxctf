@@ -229,9 +229,9 @@ function Rounds:ChooseHeros(chooser_scripts)
 
         for _, team_num in ipairs(cur_team) do
             print("chooser of " .. tostring(team_num) .. tostring(chooser_scripts[team_num]))
-            local chooser = load(chooser_scripts[team_num])()
+            local chooser = Sandbox:LoadChooseHeroScript(chooser_scripts[team_num])
             if chooser ~= nil then
-                local hero_name = chooser(self.round_count)
+                local hero_name = Sandbox:RunChooseHero(chooser, self.round_count)
                 local player_id = self.team_to_player[team_num]
                 local player_owner = PlayerResource:GetPlayer(player_id)
                 print("player owner: " .. tostring(player_owner) .. "team id " .. tostring(cur_team_id))

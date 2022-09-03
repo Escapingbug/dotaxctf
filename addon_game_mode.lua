@@ -1,5 +1,6 @@
 -- Generated from template
 require("config")
+require("sandbox")
 require("rounds")
 
 if CAddonTemplateGameMode == nil then

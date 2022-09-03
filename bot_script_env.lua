@@ -5,7 +5,7 @@ end
 
 function BotScript:Init(script_content)
     print("run bot script: " .. script_content)
-    local run_bot_func, err = load(script_content)
+    local run_bot_func, err = Sandbox:LoadActionScript(script_content)
     self.ctx = {}
     if run_bot_func then
         print("got run bot")
@@ -16,18 +16,12 @@ function BotScript:Init(script_content)
     end
 end
 
-function BotScript:Sandbox(entity)
-    -- TODO: liangjs will sandbox you!
-    return entity
-end
-
 function BotScript:OnThink(entity)
     if not self.run_bot then
         return
     end
 
-    local sandboxed_entity = self:Sandbox(entity)
-    self.ctx = self.run_bot(sandboxed_entity, self.ctx)
+    self.ctx = Sandbox:RunAction(self.run_bot, entity, self.ctx)
     return 0.1
 end
 
