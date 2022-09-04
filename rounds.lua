@@ -50,17 +50,10 @@ function Rounds:UpdateScoresPanel()
 end
 
 function Rounds:CleanRoundScores()
-    for candidate_num, _ in pairs(Config.candidates) do
-        self.scores_this_round[candidate_num] = 0
-        local requestBody = json.encode({team_num = candidate_num, scores_this_round = self.scores_this_round[candidate_num] + 10})
-        local runRequest = CreateHTTPRequest("POST", "http://127.0.0.1:8000/scores?token=THISISDEMO")
-        if runRequest ~= nil then
-            runRequest:SetHTTPRequestRawPostBody("application/json", requestBody)
-            runRequest:Send(function(result)
-                print("Run Id Sent!")
-            end 
-        )
-        end
+    local req = CreateHTTPRequest("POST", "http://127.0.0.1:8000/scores?token=THISISDEMO")
+    if req ~= nil then
+        req:SetHTTPRequestRawPostBody("application/json", json.encode(self.scores_this_round))
+        req:Send(function() end)
     end
     Rounds:UpdateScoresPanel()
 end
@@ -200,7 +193,7 @@ function Rounds:InitCandidateHero(hero)
 end
 
 function Rounds:PrepareRoundPlayerScripts(on_done)
-    CreateHTTPRequest("GET", "http://127.0.0.1:8000/scripts?token=THISISDEMO"):Send( function(result)
+    CreateHTTPRequest("GET", "http://127.0.0.1:8000/scripts?token=THISISDEMO"):Send(function(result)
         local body = result["Body"]
         print("got body: " .. body)
         json_code = json.decode(body) -- {"team_num": ,"script": }
