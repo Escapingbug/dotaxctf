@@ -21,6 +21,12 @@ if Rounds == nil then
     Rounds = class({})
 end
 
+function Rounds:CleanRoundScores()
+    for candidate_num, _ in pairs(Config.candidates) do
+        self.scores_this_round[candidate_num] = 0
+    end
+end
+
 function Rounds:Init()
     print("rounds constructor called")
     self.game_started = false
@@ -28,6 +34,8 @@ function Rounds:Init()
     self.round_count = 0
     -- team number => scores
     self.scores_this_round = {}
+    Rounds:CleanRoundScores()
+    
     -- team number => hero object
     self.heros = {}
 
@@ -56,17 +64,7 @@ function Rounds:InitGameMode()
 end
 
 function Rounds:CleanupLivingHeros()
-    print("clean up heros..")
-    -- TODO: delete play?
-    for candidate_num, hero in pairs(self.heros) do
-        if hero:IsAlive() then
-            local candidate_score = self.scores_this_round[candidate_num]
-            if candidate_score == nil then
-                candidate_score = 0
-            end
-            self.scores_this_round[candidate_num] = candidate_score + Config.extra_score_for_winner
-        end
-
+    for _, hero in pairs(self.heros) do
         hero:RemoveSelf()
     end
 
@@ -101,12 +99,10 @@ end
 
 function Rounds:SetupLastHitListener()
     ListenToGameEvent("last_hit", function(event)
-        local entity_killed = event["EntKilled"]
+        local _entity_killed = event["EntKilled"]
         local player_id = event["PlayerID"]
-        local candidate_name = self.player_to_candidate[player_id]
-        -- TODO: add scores
-        print("got last hit! " .. entity_killed .. " " .. player_id)
-        print("last hit candidate name " .. tostring(candidate_name))
+        local candidate = self.player_to_candidate[player_id]
+        self.scores_this_round[candidate] = self.scores_this_round[candidate] + 1
     end, nil)
 end
 
@@ -266,12 +262,74 @@ function Rounds:PrepareBeginRound()
     end)
 end
 
+--[[
+    Returns living teams in an array.
+]]
+function Rounds:GetLivingTeams()
+    -- count team alive heros
+    local team_alive_counts = {}
+    for team_id, _ in ipairs(AVAILABLE_TEAMS) do
+        team_alive_counts[team_id] = 0
+    end
+    for candidate_num, _ in pairs(Config.candidates) do
+        local hero = self.heros[candidate_num]
+        if hero:IsAlive() then
+            local team = hero:GetTeam()
+            team_alive_counts[team] = team_alive_counts[team] + 1
+        end
+    end
+
+    -- when less than one team got alive heros, round should be over
+    local alive_teams = {}
+    for team_num, alives in pairs(team_alive_counts) do
+        if alives > 0 then
+            table.insert(alive_teams, team_num)
+        end
+    end
+
+    return alive_teams
+end
+
+--[[
+    Scoring when time limit is reached
+]]
+function Rounds:RoundLimitedScoring()
+    local living_teams = Rounds:GetLivingTeams()
+    if #living_teams == 1 then
+        -- we got an winning team!
+        local winning_team = living_teams[1]
+        for candidate_num, _ in pairs(Config.candidates) do
+            local hero = self.heros[candidate_num]
+            local team = hero:GetTeam()
+            if team == winning_team then
+                self.scores_this_round[candidate_num] =
+                    self.scores_this_round[candidate_num] + 1
+            end
+        end
+    else
+        -- Multiple team is winning..
+        -- we add scores to the living heros.
+
+        for candidate_num, _ in pairs(Config.candidates) do
+            local hero = self.heros[candidate_num]
+            if hero:IsAlive() then
+                self.scores_this_round[candidate_num] =
+                    self.scores_this_round[candidate_num] + 1
+            end
+        end
+    end
+end
+
 function Rounds:BeginRound(bot_scripts)
 
     local round_hint = "Round #" .. self.round_count .. "begins!!"
     -- TODO: How to display the message??
     -- this is not working :(
     Msg(round_hint)
+    Msg("last round points: " .. GameRules.inspect(self.scores_this_round))
+    -- TODO: push the scores
+
+    Rounds:CleanRoundScores()
 
     Timers:CreateTimer(
         "round_limit_timer",
@@ -279,6 +337,8 @@ function Rounds:BeginRound(bot_scripts)
             endTime = Config.round_time,
             callback = function ()
                 Timers:RemoveTimer("round_periodic_timer")
+                -- Round limit is reached, we should count the living teams
+                Rounds:RoundLimitedScoring()
                 Rounds:PrepareBeginRound()
             end
         }
@@ -289,34 +349,8 @@ function Rounds:BeginRound(bot_scripts)
         {
             endTime = 1,
             callback = function()
-                local round_over = false
-
-                -- count team alive heros
-                local team_alive_counts = {}
-                for team_id, _ in ipairs(AVAILABLE_TEAMS) do
-                    team_alive_counts[team_id] = 0
-                end
-                for candidate_num, _ in pairs(Config.candidates) do
-                    local hero = self.heros[candidate_num]
-                    if hero:IsAlive() then
-                        local team = hero:GetTeam()
-                        team_alive_counts[team] = team_alive_counts[team] + 1
-                    end
-                end
-
-                -- when less than one team got alive heros, round should be over
-                local alive_team_counts = 0
-                for _, alives in pairs(team_alive_counts) do
-                    if alives > 0 then
-                        alive_team_counts = alive_team_counts + 1
-                    end
-                end
-
-                if alive_team_counts <= 1 then
-                    round_over = true
-                end
-
-                if round_over then
+                local living_teams = Rounds:GetLivingTeams()
+                if #living_teams <= 1 then
                     Timers:RemoveTimer("round_limit_timer")
                     Rounds:PrepareBeginRound()
                     return
