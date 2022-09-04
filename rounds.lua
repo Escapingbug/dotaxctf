@@ -123,6 +123,13 @@ end
 
 function Rounds:NextRound(scripts)
     print("Next Round")
+    self.round_count = self.round_count + 1
+
+    -- TODO: implement game info
+    Sandbox:SetupGameInfo({
+        GetHistoryScores = nil,
+        GetHistoryChoices = nil,
+    })
 
     Rounds:CleanupLivingHeros()
     Rounds:ChooseHeros(scripts["chooser_scripts"])
@@ -141,30 +148,28 @@ end
 function Rounds:PrepareRoundPlayerScripts(on_done)
     -- TODO: real http access to the player scripts
     local sample_choose_hero_code = [[
-    return function (round)
-        return "npc_dota_hero_axe"
-    end
+    local round = ...
+    return "npc_dota_hero_bloodseeker"
 ]]
     
     local sample_bot_code = [[
-    return function (entity)
-        if entity:IsAttacking() then
-            return
-        end
-        local units = FindUnitsInRadius(
-            entity:GetTeam(),
-            Vector(200, 200),
-            nil,
-            300.0,
-            DOTA_UNIT_TARGET_TEAM_ENEMY,
-            DOTA_UNIT_TARGET_HERO,
-            DOTA_UNIT_TARGET_FLAG_NONE,
-            FIND_ANY_ORDER,
-            false
-        )
-        if #units > 0 then
-            entity:MoveToTargetToAttack(units[1])
-        end
+    local entity = ...
+    if entity:IsAttacking() then
+        return
+    end
+    local units = FindUnitsInRadius(
+        entity:GetTeam(),
+        Vector(200, 200),
+        nil,
+        300.0,
+        DOTA_UNIT_TARGET_TEAM_ENEMY,
+        DOTA_UNIT_TARGET_HERO,
+        DOTA_UNIT_TARGET_FLAG_NONE,
+        FIND_ANY_ORDER,
+        false
+    )
+    if #units > 0 then
+        entity:MoveToTargetToAttack(units[1])
     end
 ]]
 
@@ -197,10 +202,6 @@ function table.shuffle(x)
     return x
 end
 
-function table.clone(list)
-    return {table.unpack(list)}
-end
-
 function Rounds:ChooseHeros(chooser_scripts)
     -- TODO: http fetch the real hero chooser code
     -- TODO: add hero chooser fetch flag so that game only starts
@@ -230,25 +231,23 @@ function Rounds:ChooseHeros(chooser_scripts)
         for _, team_num in ipairs(cur_team) do
             print("chooser of " .. tostring(team_num) .. tostring(chooser_scripts[team_num]))
             local chooser = Sandbox:LoadChooseHeroScript(chooser_scripts[team_num])
-            if chooser ~= nil then
-                local hero_name = Sandbox:RunChooseHero(chooser, self.round_count)
-                local player_id = self.team_to_player[team_num]
-                local player_owner = PlayerResource:GetPlayer(player_id)
-                print("player owner: " .. tostring(player_owner) .. "team id " .. tostring(cur_team_id))
-                local team_hero = CreateUnitByName(
-                    hero_name,
-                    Config.hero_locations[team_num],
-                    true, -- findClearSpace
-                    nil, -- npcowner
-                    player_owner, -- entity owner
-                    cur_team_id
-                )
+            local hero_name = Sandbox:RunChooseHero(chooser, self.round_count)
+            local player_id = self.team_to_player[team_num]
+            local player_owner = PlayerResource:GetPlayer(player_id)
+            print("player owner: " .. tostring(player_owner) .. "team id " .. tostring(cur_team_id))
+            local team_hero = CreateUnitByName(
+                hero_name,
+                Config.hero_locations[team_num],
+                true, -- findClearSpace
+                nil, -- npcowner
+                player_owner, -- entity owner
+                cur_team_id
+            )
 
-                print("check player and team .. " .. tostring(team_hero:GetPlayerID()) .. " " .. tostring(team_hero:GetTeam()))
+            print("check player and team .. " .. tostring(team_hero:GetPlayerID()) .. " " .. tostring(team_hero:GetTeam()))
 
-                Rounds:InitTeamHero(team_hero)
-                self.heros[team_num] = team_hero
-            end
+            Rounds:InitTeamHero(team_hero)
+            self.heros[team_num] = team_hero
         end
     end
 end

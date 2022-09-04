@@ -4,23 +4,12 @@ if BotScriptEnv == nil then
 end
 
 function BotScript:Init(script_content)
-    print("run bot script: " .. script_content)
-    local run_bot_func, err = Sandbox:LoadActionScript(script_content)
+    print("bot script: " .. script_content)
+    self.run_bot = Sandbox:LoadActionScript(script_content)
     self.ctx = {}
-    if run_bot_func then
-        print("got run bot")
-        self.run_bot = run_bot_func()
-    else
-        print("run bot func is nil!! " .. err)
-        self.run_bot = nil
-    end
 end
 
 function BotScript:OnThink(entity)
-    if not self.run_bot then
-        return
-    end
-
     self.ctx = Sandbox:RunAction(self.run_bot, entity, self.ctx)
     return 0.1
 end
