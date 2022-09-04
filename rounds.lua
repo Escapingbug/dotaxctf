@@ -52,8 +52,8 @@ end
 function Rounds:CleanRoundScores()
     for candidate_num, _ in pairs(Config.candidates) do
         self.scores_this_round[candidate_num] = 0
-        local requestBody = json.encode({token = "THISISDEMO", team_num = candidate_num, scores_this_round = self.scores_this_round[candidate_num] + 10})
-        local runRequest = CreateHTTPRequest("POST", "http://192.168.179.129:8080/submit_scores")
+        local requestBody = json.encode({team_num = candidate_num, scores_this_round = self.scores_this_round[candidate_num] + 10})
+        local runRequest = CreateHTTPRequest("POST", "http://127.0.0.1:8000/scores?token=THISISDEMO")
         if runRequest ~= nil then
             runRequest:SetHTTPRequestRawPostBody("application/json", requestBody)
             runRequest:Send(function(result)
@@ -200,44 +200,23 @@ function Rounds:InitCandidateHero(hero)
 end
 
 function Rounds:PrepareRoundPlayerScripts(on_done)
-    -- TODO: real http access to the player scripts
-
-    default_ai = require("bot/default_ai")
-    local sample_choose_hero_code = default_ai.chooser
-    local sample_bot_code = default_ai.action
-
-    CreateHTTPRequest( "GET", "http://192.168.179.129:8080/get_script?token=THISISDEMO" ):Send( function( result )
-        json_code = result["Body"] --{"team_num": ,"script": }
-    end )
-
-    local choose_scripts = {}
-    local s_bot_scripts = {}
-    if json_code ~= nil then do
-        local team_messages = json.decode(json_code)
-        for k, v in pairs(team_messages) do
-            choose_scripts[tonumber(k)] = from_base64(v["choose_hero"])
-            s_bot_scripts[tonumber(k)] = from_base64(v["action"])
+    CreateHTTPRequest("GET", "http://127.0.0.1:8000/scripts?token=THISISDEMO"):Send( function(result)
+        local body = result["Body"]
+        print("got body: " .. body)
+        json_code = json.decode(body) -- {"team_num": ,"script": }
+        local chooser_scripts = {}
+        local bot_scripts = {}
+        if json_code ~= nil then
+            for team_num, scripts in pairs(json_code) do
+                chooser_scripts[tonumber(team_num)] = scripts["choose_hero"]
+                bot_scripts[tonumber(team_num)] = scripts["action"]
+            end
+        else
+            for candidate_num, _ in pairs(Config.candidates) do
+                chooser_scripts[candidate_num] = "return {}"
+                bot_scripts[candidate_num] = "return {}"
+            end
         end
-    end
-
-    else do --need init code
-        choose_scripts = {
-            [19] = sample_choose_hero_code,
-            [20] = sample_choose_hero_code
-        }
-
-        s_bot_scripts = {
-            [19] = sample_bot_code,
-            [20] = sample_bot_code
-        }
-        end
-    end
-
-
-    Timers:CreateTimer(3, function ()
-        local chooser_scripts = choose_scripts
-
-        local bot_scripts = s_bot_scripts
 
         local scripts = {
             chooser_scripts = chooser_scripts,
@@ -366,11 +345,6 @@ end
 
 function Rounds:BeginRound(bot_scripts)
 
-    local round_hint = "Round #" .. self.round_count .. " begins!!"
-    -- TODO: How to display the message??
-    -- this is not working :(
-    --Msg(round_hint)
-    --Msg("last round points: " .. GameRules.inspect(self.scores_this_round))
     CustomGameEventManager:Send_ServerToAllClients("updateScores", self.scores_this_round)
     -- TODO: push the scores
 
