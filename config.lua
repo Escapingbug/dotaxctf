@@ -8,8 +8,8 @@ function Config:Init()
     self.extra_score_for_winner = 1
     self.candidates_per_team = 1
     self.candidates = {
-        [19] = "team1",
-        [20] = "team2",
+        [19] = "Eur3kA",
+        [20] = "FlappyPig",
     }
     self.candidates_count = 0
     for _, _ in pairs(self.candidates) do

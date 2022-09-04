@@ -25,7 +25,7 @@ end
 function Rounds:UpdateRoundTimerPanel(cur_time)
     local event = {
         round_count = self.round_count,
-        cur_time = cur_time 
+        cur_time = cur_time
     }
     CustomGameEventManager:Send_ServerToAllClients(
         "updateRoundTimer",
@@ -167,6 +167,12 @@ end
 
 function Rounds:NextRound(scripts)
     print("Next Round")
+
+    if self.round_count > 0 then
+        local last_scores = deepcopy(self.scores_this_round)
+        table.insert(self.history.scores, last_scores)
+    end
+
     self.round_count = self.round_count + 1
 
     Rounds:CleanupLivingHeros()
@@ -216,6 +222,8 @@ function Rounds:ChooseHeros(chooser_scripts)
     -- when hero is added
     print("choosing heros")
 
+    local choices = {}
+
     -- split teams
     local team_count = Config.candidates_count / Config.candidates_per_team
     local team_config = {}
@@ -236,7 +244,7 @@ function Rounds:ChooseHeros(chooser_scripts)
         local cur_team_id = AVAILABLE_TEAMS[i]
 
         for _, candidate_num in ipairs(cur_candidate) do
-            print("chooser of " .. tostring(candidate_num), tostring(chooser_scripts[candidate_num]))
+            -- print("chooser of " .. tostring(candidate_num), tostring(chooser_scripts[candidate_num]))
             local chooser = Sandbox:LoadChooseHeroScript(chooser_scripts[candidate_num])
             local hero_name = Sandbox:RunChooseHero(chooser)
             local player_id = self.candidate_to_player[candidate_num]
@@ -255,8 +263,11 @@ function Rounds:ChooseHeros(chooser_scripts)
 
             Rounds:InitCandidateHero(candidate_hero)
             self.heros[candidate_num] = candidate_hero
+            choices[candidate_num] = hero_name
         end
     end
+
+    table.insert(self.history.choices, choices)
 end
 
 function Rounds:PrepareBeginRound()
@@ -323,7 +334,7 @@ end
 
 function Rounds:BeginRound(bot_scripts)
 
-    local round_hint = "Round #" .. self.round_count .. "begins!!"
+    local round_hint = "Round #" .. self.round_count .. " begins!!"
     -- TODO: How to display the message??
     -- this is not working :(
     --Msg(round_hint)
@@ -381,12 +392,15 @@ Sandbox:SetupGameInfo{
     end,
     GetHistoryScores  = function(round)
         local scores = Rounds.history.scores[round]
-        return table.deepcopy(scores)
+        return deepcopy(scores)
     end,
     GetHistoryChoices = function(round)
         local choices = Rounds.history.choices[round]
-        return table.deepcopy(choices)
+        return deepcopy(choices)
     end,
+    GetCandidates = function()
+        return deepcopy(Config.candidates)
+    end
 }
 
 GameRules.Rounds = Rounds

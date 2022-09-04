@@ -6,15 +6,16 @@ function table.shuffle(x)
     return x
 end
 
+-- https://stackoverflow.com/questions/51757270/lua-unpack-with-nil-alternative
 table.pack = table.pack or function(...) return { n = select("#", ...), ... } end
-
 table.unpack = table.unpack or unpack
 
 function table.clone(list)
     return {table.unpack(list)}
 end
 
-function table.deepcopy(orig, copies)
+-- http://lua-users.org/wiki/CopyTable
+function deepcopy(orig, copies)
     copies = copies or {}
     local orig_type = type(orig)
     local copy
