@@ -21,10 +21,46 @@ if Rounds == nil then
     Rounds = class({})
 end
 
+function Rounds:UpdateRoundTimerPanel(cur_time)
+    local event = {
+        round_count = self.round_count,
+        cur_time = cur_time 
+    }
+    CustomGameEventManager:Send_ServerToAllClients(
+        "updateRoundTimer",
+        event
+    )
+end
+
+function Rounds:UpdateScoresPanel()
+    local scores_to_display = {
+        round_count = self.round_count,
+        scores = {}
+    }
+    for candidate_num, score in pairs(self.scores_this_round) do
+        local name = Config.candidates[candidate_num]
+        scores_to_display.scores[name] = score
+    end
+    CustomGameEventManager:Send_ServerToAllClients(
+        "updateScores",
+        scores_to_display
+    )
+end
+
 function Rounds:CleanRoundScores()
     for candidate_num, _ in pairs(Config.candidates) do
         self.scores_this_round[candidate_num] = 0
     end
+    Rounds:UpdateScoresPanel()
+end
+
+function Rounds:AdjustScore(candidate, score_delta)
+    if self.scores_this_round[candidate] == nil then
+        self.scores_this_round[candidate] = 0
+    end
+
+    self.scores_this_round[candidate] = self.scores_this_round[candidate] + score_delta
+    Rounds:UpdateScoresPanel()
 end
 
 function Rounds:Init()
@@ -102,7 +138,7 @@ function Rounds:SetupLastHitListener()
         local _entity_killed = event["EntKilled"]
         local player_id = event["PlayerID"]
         local candidate = self.player_to_candidate[player_id]
-        self.scores_this_round[candidate] = self.scores_this_round[candidate] + 1
+        Rounds:AdjustScore(candidate, 1)
     end, nil)
 end
 
@@ -214,7 +250,7 @@ function Rounds:ChooseHeros(chooser_scripts)
     print("choosing heros")
 
     -- split teams
-    local team_count = Config.team_count / Config.candidates_count
+    local team_count = Config.candidates_count / Config.candidats_per_team
     local team_config = {}
 
     for candidate_num, _ in pairs(Config.candidates) do
@@ -226,7 +262,7 @@ function Rounds:ChooseHeros(chooser_scripts)
 
     for i = 1, team_count do
         local cur_candidate = {}
-        for _ = 1, Config.candidates_count do
+        for _ = 1, Config.candidaets_per_team do
             table.insert(cur_candidate, table.remove(team_config, 1))
         end
 
@@ -302,8 +338,7 @@ function Rounds:RoundLimitedScoring()
             local hero = self.heros[candidate_num]
             local team = hero:GetTeam()
             if team == winning_team then
-                self.scores_this_round[candidate_num] =
-                    self.scores_this_round[candidate_num] + 1
+                Rounds:AdjustScore(candidate_num, 1)
             end
         end
     else
@@ -313,8 +348,7 @@ function Rounds:RoundLimitedScoring()
         for candidate_num, _ in pairs(Config.candidates) do
             local hero = self.heros[candidate_num]
             if hero:IsAlive() then
-                self.scores_this_round[candidate_num] =
-                    self.scores_this_round[candidate_num] + 1
+                Rounds:AdjustScore(candidate_num, 1)
             end
         end
     end
@@ -325,12 +359,14 @@ function Rounds:BeginRound(bot_scripts)
     local round_hint = "Round #" .. self.round_count .. "begins!!"
     -- TODO: How to display the message??
     -- this is not working :(
-    Msg(round_hint)
-    Msg("last round points: " .. GameRules.inspect(self.scores_this_round))
+    --Msg(round_hint)
+    --Msg("last round points: " .. GameRules.inspect(self.scores_this_round))
+    CustomGameEventManager:Send_ServerToAllClients("updateScores", self.scores_this_round)
     -- TODO: push the scores
 
     Rounds:CleanRoundScores()
 
+    Rounds:UpdateRoundTimerPanel(GameRules:GetTimeOfDay())
     Timers:CreateTimer(
         "round_limit_timer",
         {
