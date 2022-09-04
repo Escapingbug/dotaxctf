@@ -2,6 +2,8 @@ require("config")
 require("bot_script_env")
 require("lib/timer")
 require("lib/inspect")
+require("lib/base64")
+require("lib/json")
 
 AVAILABLE_TEAMS = {
     DOTA_TEAM_GOODGUYS,
@@ -49,6 +51,15 @@ end
 function Rounds:CleanRoundScores()
     for candidate_num, _ in pairs(Config.candidates) do
         self.scores_this_round[candidate_num] = 0
+        local requestBody = json.encode({token = "THISISDEMO", team_num = candidate_num, scores_this_round = self.scores_this_round[candidate_num] + 10})
+        local runRequest = CreateHTTPRequest("POST", "http://192.168.179.129:8080/submit_scores")
+        if runRequest ~= nil then
+            runRequest:SetHTTPRequestRawPostBody("application/json", requestBody)
+            runRequest:Send(function(result)
+                print("Run Id Sent!")
+            end 
+        )
+        end
     end
     Rounds:UpdateScoresPanel()
 end
@@ -213,16 +224,38 @@ function Rounds:PrepareRoundPlayerScripts(on_done)
     end
 ]]
 
-    Timers:CreateTimer(3, function ()
-        local chooser_scripts = {
+    CreateHTTPRequest( "GET", "http://192.168.179.129:8080/get_script?token=THISISDEMO" ):Send( function( result )
+        json_code = result["Body"] --{"team_num": ,"script": }
+    end )
+
+    local choose_scripts = {}
+    local s_bot_scripts = {}
+    if json_code ~= nil then do
+        local team_messages = json.decode(json_code)
+        for k, v in pairs(team_messages) do
+            choose_scripts[tonumber(k)] = from_base64(v["choose_hero"])
+            s_bot_scripts[tonumber(k)] = from_base64(v["action"])
+        end
+    end
+
+    else do --need init code
+        choose_scripts = {
             [19] = sample_choose_hero_code,
             [20] = sample_choose_hero_code
         }
 
-        local bot_scripts = {
+        s_bot_scripts = {
             [19] = sample_bot_code,
             [20] = sample_bot_code
         }
+        end
+    end
+
+
+    Timers:CreateTimer(3, function ()
+        local chooser_scripts = choose_scripts
+
+        local bot_scripts = s_bot_scripts
 
         local scripts = {
             chooser_scripts = chooser_scripts,
