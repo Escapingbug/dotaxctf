@@ -40,13 +40,19 @@ end
 
 function Rounds:InitGameMode()
     print("Rounds:InitGameMode...")
-    GameRules:GetGameModeEntity():SetAlwaysShowPlayerNames(true)
+    GameRules:SetUseUniversalShopMode(true)
     -- for faster entering
 	GameRules:SetPreGameTime(3.0)
 
     -- disable auto gold gain
     GameRules:SetStartingGold(0)
     GameRules:SetGoldPerTick(0)
+
+    local game_mode = GameRules:GetGameModeEntity()
+    game_mode:SetAlwaysShowPlayerNames(true)
+    game_mode:SetBuybackEnabled(false)
+    game_mode:SetAllowNeutralItemDrops(false)
+
 end
 
 function Rounds:CleanupLivingHeros()
@@ -85,8 +91,8 @@ function Rounds:SetupBotPlayers()
         assert(ob_hero, "add bot player failed")
 
         ob_hero:SetRespawnsDisabled(true)
-        ob_hero:ForceKill(false)
         local player_id = ob_hero:GetPlayerID()
+        ob_hero:RemoveSelf()
         print("adding player id " .. tostring(player_id) .. " to team " .. tostring(team_id))
         self.player_to_team[player_id] = team_id
         self.team_to_player[team_id] = player_id
@@ -153,23 +159,26 @@ function Rounds:PrepareRoundPlayerScripts(on_done)
 ]]
     
     local sample_bot_code = [[
-    local entity = ...
-    if entity:IsAttacking() then
+    local hero = ...
+    if hero.is_attacking() then
         return
     end
-    local units = FindUnitsInRadius(
-        entity:GetTeam(),
-        Vector(200, 200),
-        nil,
+    local units = hero.find_units_in_radius(
+        hero.get_position(),
         300.0,
-        DOTA_UNIT_TARGET_TEAM_ENEMY,
-        DOTA_UNIT_TARGET_HERO,
-        DOTA_UNIT_TARGET_FLAG_NONE,
-        FIND_ANY_ORDER,
-        false
+        hero.constants.DOTA_UNIT_TARGET_TEAM_ENEMY,
+        hero.constants.DOTA_UNIT_TARGET_HERO,
+        hero.constants.DOTA_UNIT_TARGET_FLAG_NONE,
+        hero.constants.FIND_ANY_ORDER
     )
     if #units > 0 then
-        entity:MoveToTargetToAttack(units[1])
+        hero.execute_order(
+            hero.constants.DOTA_UNIT_ORDER_ATTACK_TARGET,
+            units[1].get_entity_index(),
+            nil,
+            nil,
+            false
+        )
     end
 ]]
 
