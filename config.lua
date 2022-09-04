@@ -15,7 +15,7 @@ function Config:Init()
     for _, _ in pairs(self.candidates) do
         self.candidates_count = self.candidates_count + 1
     end
-    self.round_time = 60
+    self.round_time = 5 * 60
     self.hero_locations = {
         [19] = Vector(100, 100),
         [20] = Vector(500, 500)
@@ -23,6 +23,11 @@ function Config:Init()
     -- how many seconds to wait after choosing hero
     -- and action
     self.round_begin_delay = 3
+
+    self.server = {
+        url_get_scripts = "http://127.0.0.1:8000/scripts?token=THISISDEMO",
+        url_post_scores = "http://127.0.0.1:8000/scores?token=THISISDEMO",
+    }
 end
 
 if not Config.config_inited then Config:Init() end

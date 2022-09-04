@@ -2,65 +2,16 @@ from typing import Dict
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
 import uvicorn
+import os
 
-DEFAULT_CHOOSER = """
-local round = GetRoundCount()
-return "npc_dota_hero_bloodseeker"
-"""
+curdir = os.path.abspath(os.path.dirname(__file__))
 
-DEFAULT_ACTION = """
-local hero, ctx = ...
-local round = GetRoundCount()
-ability_count = hero:GetAbilityCount()
-for i = 0, ability_count-1 do
-    local ability = hero:GetAbilityByIndex(i)
-    if ability then
-        -- print("ability name", ability:GetAbilityName())
-        -- print("level", ability:GetLevel())
-        -- print("Behavior", ability:GetBehavior())
-        -- print("AOE Radius", ability:GetAOERadius())
-        -- print("channel cost", ability:GetChannelledManaCostPerSecond(ability:GetLevel()))
-        -- print("channel time", ability:GetChannelTime())
-        -- print("cast range", ability:GetEffectiveCastRange(hero:GetAbsOrigin(), nil))
-        -- print("cool down", ability:GetEffectiveCooldown(ability:GetLevel()))
-        -- print("mana cost", ability:GetManaCost(ability:GetLevel()))
-        -- print("toggle", ability:GetToggleState())
-        -- print("is item", ability:IsItem())
-        -- print("duration", ability:GetDuration())
-    end
-end
+def read_file(path: str) -> str:
+    with open(path) as f:
+        return f.read()
 
-if hero:IsAttacking() then
-    return ctx
-end
-
-
-DOTA_UNIT_TARGET_TEAM_ENEMY = 2
-DOTA_UNIT_TARGET_HERO = 1
-DOTA_UNIT_TARGET_FLAG_NONE = 0
-FIND_ANY_ORDER = 0
-DOTA_UNIT_ORDER_ATTACK_TARGET = 4
-
-local units = hero:FindUnitsInRadius(
-    hero:GetAbsOrigin(),
-    3000,
-    DOTA_UNIT_TARGET_TEAM_ENEMY,
-    DOTA_UNIT_TARGET_HERO,
-    DOTA_UNIT_TARGET_FLAG_NONE,
-    FIND_ANY_ORDER
-)
-if #units > 0 then
-    hero:ExecuteOrder(
-        DOTA_UNIT_ORDER_ATTACK_TARGET,
-        units[1].GetEntityIndex(),
-        nil,
-        nil,
-        false
-    )
-end
-
-return ctx
-"""
+DEFAULT_CHOOSER = read_file(os.path.join(curdir, "bot", "default_chooser.lua"))
+DEFAULT_ACTION = read_file(os.path.join(curdir, "bot", "default_action.lua"))
 
 app = FastAPI()  
 

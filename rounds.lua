@@ -50,7 +50,7 @@ function Rounds:UpdateScoresPanel()
 end
 
 function Rounds:CleanRoundScores()
-    local req = CreateHTTPRequest("POST", "http://127.0.0.1:8000/scores?token=THISISDEMO")
+    local req = CreateHTTPRequest("POST", Config.server.url_post_scores)
     if req ~= nil then
         req:SetHTTPRequestRawPostBody("application/json", json.encode({
             scores = self.scores_this_round,
@@ -200,7 +200,7 @@ function Rounds:InitCandidateHero(hero)
 end
 
 function Rounds:PrepareRoundPlayerScripts(on_done)
-    CreateHTTPRequest("GET", "http://127.0.0.1:8000/scripts?token=THISISDEMO"):Send(function(result)
+    CreateHTTPRequest("GET", Config.server.url_get_scripts):Send(function(result)
         local body = result["Body"]
         print("got body: " .. body)
         json_code = json.decode(body) -- {"team_num": ,"script": }
@@ -213,8 +213,8 @@ function Rounds:PrepareRoundPlayerScripts(on_done)
             end
         else
             for candidate_num, _ in pairs(Config.candidates) do
-                chooser_scripts[candidate_num] = "return {}"
-                bot_scripts[candidate_num] = "return {}"
+                chooser_scripts[candidate_num] = ""
+                bot_scripts[candidate_num] = ""
             end
         end
 
@@ -228,7 +228,6 @@ function Rounds:PrepareRoundPlayerScripts(on_done)
 end
 
 function Rounds:ChooseHeros(chooser_scripts)
-    -- TODO: http fetch the real hero chooser code
     -- TODO: add hero chooser fetch flag so that game only starts
     -- when hero is added
     print("choosing heros")
@@ -346,7 +345,6 @@ end
 function Rounds:BeginRound(bot_scripts)
 
     CustomGameEventManager:Send_ServerToAllClients("updateScores", self.scores_this_round)
-    -- TODO: push the scores
 
     Rounds:CleanRoundScores()
 
