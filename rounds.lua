@@ -344,7 +344,7 @@ function Rounds:BeginRound(bot_scripts)
 
     Rounds:CleanRoundScores()
 
-    Rounds:UpdateRoundTimerPanel(GameRules:GetTimeOfDay())
+    Rounds:UpdateRoundTimerPanel(GameRules:GetDOTATime(false, false))
     Timers:CreateTimer(
         "round_limit_timer",
         {
