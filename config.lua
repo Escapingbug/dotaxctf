@@ -17,12 +17,17 @@ function Config:Init()
     end
     self.round_time = 5 * 60
     self.hero_locations = {
-        [19] = Vector(100, 100),
-        [20] = Vector(500, 500)
+        [19] = Vector(-400, -400),
+        [20] = Vector(400, 400)
     }
     -- how many seconds to wait after choosing hero
     -- and action
     self.round_begin_delay = 3
+
+    self.shop = {
+        location = Vector(0, 0),
+        radius = 1e6,
+    }
 
     self.server = {
         url_get_scripts = "http://127.0.0.1:8000/scripts?token=THISISDEMO",

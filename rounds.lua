@@ -169,6 +169,8 @@ function Rounds:BeginGame()
         Rounds:SetupBotPlayers()
         Rounds:SetupLastHitListener()
 
+        Rounds:SetupShop()
+
         Rounds:PrepareBeginRound()
         self.game_started = true
         -- all next rounds should be called on timer set by next round
@@ -386,6 +388,16 @@ function Rounds:BeginRound(bot_scripts)
             BotScriptEnv:AttachScriptOnUnit(hero, script)
         end
     end
+end
+
+function Rounds:SetupShop()
+    local location = Config.shop.location
+    local shop = CreateUnitByName("dota_fountain", location, true, nil, nil, DOTA_TEAM_NEUTRALS)
+    shop:SetCanSellItems(true)
+    shop:SetIdleAcquire(false)
+    -- shop:SetShopType(DOTA_SHOP_HOME) -- not a shop
+    local trigger = SpawnDOTAShopTriggerRadiusApproximate(shop:GetAbsOrigin(), Config.shop.radius)
+    trigger:SetShopType(DOTA_SHOP_HOME)
 end
 
 if not Rounds.heros then Rounds:Init() end
