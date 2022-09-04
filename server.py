@@ -1,8 +1,7 @@
-from fastapi import FastAPI, Body, Request, Query
-from fastapi.responses import JSONResponse
-from typing import Optional
-from fastapi.exceptions import RequestValidationError
+from typing import Dict
+from fastapi import FastAPI, Query
 from pydantic import BaseModel
+import uvicorn
 
 DEFAULT_CHOOSER = """
 local round = GetRoundCount()
@@ -68,20 +67,21 @@ app = FastAPI()
 team_nums = [19, 20]
 print("init success")
 
-@app.exception_handler(RequestValidationError)
-async def post_validation_exception_handler(request: Request, exc: RequestValidationError):
 
-    print(f'参数不对{request.method},{request.url}')
-    return JSONResponse({'code': 400, 'msg': exc.errors()})
+class ScoreThisRound(BaseModel):
+    scores: Dict[str, int]
+    round_count: int
+
 
 @app.post('/scores')
 async def test_post(
-    scores_this_round: dict[str, int],
+    scores_this_round: ScoreThisRound,
     token: str = Query(None, title='token', max_length=20),
 ):
     if token != "THISISDEMO":
         return None
     print(f"got score: {scores_this_round}")
+
 
 @app.get("/scripts")
 def req_script(token: str):
@@ -123,3 +123,7 @@ def req_script(token: str):
     
 #     req = {"choose_hero": b64_choose_code, "action": b64_bot_code, "attribute": {"strength": 20, "intelligence": 20, "agility": 20}}
 #     return req
+
+
+if __name__ == "__main__":
+    uvicorn.run("server:app")

@@ -52,7 +52,10 @@ end
 function Rounds:CleanRoundScores()
     local req = CreateHTTPRequest("POST", "http://127.0.0.1:8000/scores?token=THISISDEMO")
     if req ~= nil then
-        req:SetHTTPRequestRawPostBody("application/json", json.encode(self.scores_this_round))
+        req:SetHTTPRequestRawPostBody("application/json", json.encode({
+            scores = self.scores_this_round,
+            round_count = self.round_count
+        }))
         req:Send(function() end)
     end
     self.scores_this_round = {}
