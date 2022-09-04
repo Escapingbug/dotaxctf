@@ -4,64 +4,11 @@ if Sandbox == nil then
     Sandbox = class({})
 end
 
-local constants = {
-    -- DOTA_UNIT_TARGET_TEAM
-    DOTA_UNIT_TARGET_TEAM_NONE = 0,
-    DOTA_UNIT_TARGET_TEAM_FRIENDLY = 1,
-    DOTA_UNIT_TARGET_TEAM_ENEMY = 2,
-    DOTA_UNIT_TARGET_TEAM_BOTH = 3,
-    DOTA_UNIT_TARGET_TEAM_CUSTOM = 4,
-
-    -- DOTA_UNIT_TARGET_TYPE
-    DOTA_UNIT_TARGET_NONE = 0,
-    DOTA_UNIT_TARGET_HERO = 1,
-    DOTA_UNIT_TARGET_CREEP = 2,
-    DOTA_UNIT_TARGET_BUILDING = 4,
-    DOTA_UNIT_TARGET_COURIER = 16,
-    DOTA_UNIT_TARGET_BASIC = 18,
-    DOTA_UNIT_TARGET_OTHER = 32,
-    DOTA_UNIT_TARGET_ALL = 55,
-    DOTA_UNIT_TARGET_TREE = 64,
-    DOTA_UNIT_TARGET_CUSTOM = 128,
-
-    -- DOTA_UNIT_TARGET_FLAGS
-    DOTA_UNIT_TARGET_FLAG_NONE = 0,
-    DOTA_UNIT_TARGET_FLAG_RANGED_ONLY = 2,
-    DOTA_UNIT_TARGET_FLAG_MELEE_ONLY = 4,
-    DOTA_UNIT_TARGET_FLAG_DEAD = 8,
-    DOTA_UNIT_TARGET_FLAG_MAGIC_IMMUNE_ENEMIES = 16,
-    DOTA_UNIT_TARGET_FLAG_NOT_MAGIC_IMMUNE_ALLIES = 32,
-    DOTA_UNIT_TARGET_FLAG_INVULNERABLE = 64,
-    DOTA_UNIT_TARGET_FLAG_FOW_VISIBLE = 128,
-    DOTA_UNIT_TARGET_FLAG_NO_INVIS = 256,
-    DOTA_UNIT_TARGET_FLAG_NOT_ANCIENTS = 512,
-    DOTA_UNIT_TARGET_FLAG_PLAYER_CONTROLLED = 1024,
-    DOTA_UNIT_TARGET_FLAG_NOT_DOMINATED = 2048,
-    DOTA_UNIT_TARGET_FLAG_NOT_SUMMONED = 4096,
-    DOTA_UNIT_TARGET_FLAG_NOT_ILLUSIONS = 8192,
-    DOTA_UNIT_TARGET_FLAG_NOT_ATTACK_IMMUNE = 16384,
-    DOTA_UNIT_TARGET_FLAG_MANA_ONLY = 32768,
-    DOTA_UNIT_TARGET_FLAG_CHECK_DISABLE_HELP = 65536,
-    DOTA_UNIT_TARGET_FLAG_NOT_CREEP_HERO = 131072,
-    DOTA_UNIT_TARGET_FLAG_OUT_OF_WORLD = 262144,
-    DOTA_UNIT_TARGET_FLAG_NOT_NIGHTMARED = 524288,
-    DOTA_UNIT_TARGET_FLAG_PREFER_ENEMIES = 1048576,
-    DOTA_UNIT_TARGET_FLAG_RESPECT_OBSTRUCTIONS = 2097152,
-
-    -- dotaunitorder_t
-    DOTA_UNIT_ORDER_MOVE_TO_TARGET = 2,
-    DOTA_UNIT_ORDER_ATTACK_TARGET = 4,
-    DOTA_UNIT_ORDER_CAST_TARGET = 6,
-    DOTA_UNIT_ORDER_CAST_TARGET_TREE = 7,
-    DOTA_UNIT_ORDER_CAST_NO_TARGET = 8,
-    DOTA_UNIT_ORDER_VECTOR_TARGET_POSITION = 30,
-    DOTA_UNIT_ORDER_VECTOR_TARGET_CANCELED = 34,
-
-    -- FindOrder
-    FIND_ANY_ORDER = 0,
-    FIND_CLOSEST = 1,
-    FIND_FARTHEST = 2,
-}
+local function copy_method(obj, method)
+    return function(self, ...)
+        return obj[method](obj, ...)
+    end
+end
 
 function Sandbox:Init()
     self.game_info = {}
@@ -75,6 +22,12 @@ function Sandbox:SetupGameInfo(game_info)
 end
 
 function Sandbox:LoadScript(user_script, quota, env)
+    for k, v in pairs(self.public_api) do
+        env[k] = v
+    end
+    for k, v in pairs(self.game_info) do
+        env[k] = v
+    end
     local options = {
         quota = quota,
         env = env,
@@ -100,23 +53,15 @@ function Sandbox:RunFunctionWrap(func, ...)
 end
 
 function Sandbox:LoadChooseHeroScript(user_script)
-    return self:LoadScript(user_script, 100000, {
-        game_info = self.game_info
-    })
+    return self:LoadScript(user_script, 100000, {})
 end
 
 function Sandbox:LoadActionScript(user_script)
-    env = {
-        game_info = self.game_info
-    }
-    for k, v in pairs(self.public_api) do
-        env[k] = v
-    end
-    return self:LoadScript(user_script, 500000, env)
+    return self:LoadScript(user_script, 500000, {})
 end
 
-function Sandbox:RunChooseHero(choose_func, round_count)
-    local hero_name = self:RunFunctionWrap(choose_func, round_count)
+function Sandbox:RunChooseHero(choose_func)
+    local hero_name = self:RunFunctionWrap(choose_func)
     if type(hero_name) ~= "string" then
         hero_name = self.default_hero
     end
@@ -124,37 +69,59 @@ function Sandbox:RunChooseHero(choose_func, round_count)
 end
 
 function Sandbox:RunAction(act_func, entity, ctx)
-    local sandboxed_entity = self:SandboxHero(entity)
+    local sandboxed_entity = self:SandboxHero(entity, false)
     local new_ctx = self:RunFunctionWrap(act_func, sandboxed_entity, ctx)
     return new_ctx
 end
 
 function Sandbox:SandboxPublicAPI()
-    -- TODO
-    return {
+    local api = {
         Vector = Vector,
+        QAngle = QAngle,
+        print = print, -- TODO: remove this
     }
+    return api
 end
 
-function Sandbox:SandboxHero(hero)
-
-    local get_entity_index = function ()
-        return hero:GetEntityIndex()
+function Sandbox:SandboxHero(hero, readonly)
+    if hero == nil then
+        return nil
     end
 
-    local get_position = function ()
-        return hero:GetAbsOrigin()
+    local sandboxed = self:SandboxBaseNPC(hero, readonly)
+
+    sandboxed.GetAgility    = copy_method(hero, "GetAgility")
+    sandboxed.GetIntellect  = copy_method(hero, "GetIntellect")
+    sandboxed.GetStrength   = copy_method(hero, "GetStrength")
+
+    return sandboxed
+end
+
+function Sandbox:SandboxBaseNPC(npc, readonly)
+    if npc == nil then
+        return nil
     end
 
-    local get_team = function ()
-        return hero:GetTeam()
-    end
+    local sandboxed = {
+        GetEntityIndex    = copy_method(npc, "GetEntityIndex"),
+        GetAbsOrigin      = copy_method(npc, "GetAbsOrigin"),
+        GetTeam           = copy_method(npc, "GetTeam"),
+        GetAttackSpeed    = copy_method(npc, "GetAttackSpeed"),
+        GetHealth         = copy_method(npc, "GetHealth"),
+        GetHealthRegen    = copy_method(npc, "GetHealthRegen"),
+        GetMaxHealth      = copy_method(npc, "GetMaxHealth"),
+        GetLevel          = copy_method(npc, "GetLevel"),
+        GetMana           = copy_method(npc, "GetMana"),
+        GetMaxMana        = copy_method(npc, "GetMaxMana"),
+        GetManaRegen      = copy_method(npc, "GetManaRegen"),
+        GetUnitName       = copy_method(npc, "GetUnitName"),
+        GetAttackRange    = copy_method(npc, "Script_GetAttackRange"),
+        GetAbilityCount   = copy_method(npc, "GetAbilityCount"),
+        IsAttacking       = copy_method(npc, "IsAttacking"),
+        IsConsideredHero  = copy_method(npc, "IsConsideredHero"),
+    }
 
-    local is_attacking = function ()
-        return hero:IsAttacking()
-    end
-
-    local find_units_in_radius = function (
+    function sandboxed:FindUnitsInRadius(
         location,
         radius,
         team_filter,
@@ -163,55 +130,89 @@ function Sandbox:SandboxHero(hero)
         find_order
     )
         local units = FindUnitsInRadius(
-            hero:GetTeam(),
+            self:GetTeam(),
             location,
-            nil,
+            nil, -- cacheUnit
             radius,
             team_filter,
             type_filter,
             flag_filter,
             find_order,
-            false
+            false -- canGrowCache
         )
         local sandboxed_units = {}
-
         for _, unit in ipairs(units) do
-            table.insert(sandboxed_units, Sandbox:SandboxHero(unit))
+            local sandboxed_unit = Sandbox:SandboxUnit(unit, true)
+            table.insert(sandboxed_units, sandboxed_unit)
         end
         return sandboxed_units
     end
 
-    local execute_order = function (
+    function sandboxed:GetAbilityByIndex(index)
+        local ability = npc:GetAbilityByIndex(index)
+        return Sandbox:SandboxAbility(ability)
+    end
+
+    if readonly then
+        return sandboxed
+    end
+
+    function sandboxed:ExecuteOrder(
         order_type,
         target_index,
         ability_index,
         position,
         queue
     )
-        local unit_index = hero:GetEntityIndex()
-        local order = {
-            UnitIndex = unit_index,
+        ExecuteOrderFromTable{
+            UnitIndex = self:GetEntityIndex(),
             OrderType = order_type,
             TargetIndex = target_index,
             AbilityIndex = ability_index,
             Position = position,
             Queue = queue
         }
-
-        ExecuteOrderFromTable(order)
     end
 
-    
+    return sandboxed
+end
+
+function Sandbox:SandboxUnit(unit, readonly)
+    if unit == nil then
+        return nil
+    elseif unit:IsConsideredHero() then
+        return self:SandboxHero(unit, readonly)
+    else -- TODO: support more NPC types
+        return nil
+    end
+end
+
+function Sandbox:SandboxAbility(ability)
+    if ability == nil then
+        return nil
+    end
+
     local sandboxed = {
-        constants = constants,
-        get_entity_index = get_entity_index,
-        get_position = get_position,
-        get_team = get_team,
-        is_attacking = is_attacking,
-        find_units_in_radius = find_units_in_radius,
-        execute_order = execute_order
+        GetAbilityName            = copy_method(ability, "GetAbilityName"),
+        GetAOERadius              = copy_method(ability, "GetAOERadius"),
+        GetBehavior               = copy_method(ability, "GetBehavior"),
+        GetChannelledManaCostPerSecond
+                                  = copy_method(ability, "GetChannelledManaCostPerSecond"),
+        GetChannelTime            = copy_method(ability, "GetChannelTime"),
+        GetCooldownTimeRemaining  = copy_method(ability, "GetCooldownTimeRemaining"),
+        GetCurrentAbilityCharges  = copy_method(ability, "GetCurrentAbilityCharges"),
+        GetEffectiveCastRange     = copy_method(ability, "GetEffectiveCastRange"), -- TODO: fix args
+        GetEffectiveCooldown      = copy_method(ability, "GetEffectiveCooldown"),
+        GetLevel                  = copy_method(ability, "GetLevel"),
+        GetLevelSpecialValueNoOverride
+                                  = copy_method(ability, "GetLevelSpecialValueNoOverride"),
+        GetManaCost               = copy_method(ability, "GetManaCost"),
+        GetSpecialValueFor        = copy_method(ability, "GetSpecialValueFor"),
+        GetToggleState            = copy_method(ability, "GetToggleState"),
+        GetDuration               = copy_method(ability, "GetDuration"),
+        IsItem                    = copy_method(ability, "IsItem"),
     }
-    -- TODO
+
     return sandboxed
 end
 

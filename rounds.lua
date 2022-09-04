@@ -2,6 +2,7 @@ require("config")
 require("bot_script_env")
 require("lib/timer")
 require("lib/inspect")
+require("lib/table")
 require("lib/base64")
 require("lib/json")
 
@@ -25,7 +26,7 @@ end
 function Rounds:UpdateRoundTimerPanel(cur_time)
     local event = {
         round_count = self.round_count,
-        cur_time = cur_time 
+        cur_time = cur_time
     }
     CustomGameEventManager:Send_ServerToAllClients(
         "updateRoundTimer",
@@ -81,7 +82,7 @@ function Rounds:Init()
     -- team number => scores
     self.scores_this_round = {}
     Rounds:CleanRoundScores()
-    
+
     -- team number => hero object
     self.heros = {}
 
@@ -90,13 +91,18 @@ function Rounds:Init()
     -- player id to candidate number
     self.player_to_candidate = {}
     self.candidate_to_player = {}
+
+    self.history = {
+        scores = {},
+        choices = {},
+    }
 end
 
 function Rounds:InitGameMode()
     print("Rounds:InitGameMode...")
     GameRules:SetUseUniversalShopMode(true)
     -- for faster entering
-	GameRules:SetPreGameTime(3.0)
+    GameRules:SetPreGameTime(3.0)
 
     -- disable auto gold gain
     GameRules:SetStartingGold(0)
@@ -171,13 +177,13 @@ end
 
 function Rounds:NextRound(scripts)
     print("Next Round")
-    self.round_count = self.round_count + 1
 
-    -- TODO: implement game info
-    Sandbox:SetupGameInfo({
-        GetHistoryScores = nil,
-        GetHistoryChoices = nil,
-    })
+    if self.round_count > 0 then
+        local last_scores = deepcopy(self.scores_this_round)
+        table.insert(self.history.scores, last_scores)
+    end
+
+    self.round_count = self.round_count + 1
 
     Rounds:CleanupLivingHeros()
     Rounds:ChooseHeros(scripts["chooser_scripts"])
@@ -195,34 +201,10 @@ end
 
 function Rounds:PrepareRoundPlayerScripts(on_done)
     -- TODO: real http access to the player scripts
-    local sample_choose_hero_code = [[
-    local round = ...
-    return "npc_dota_hero_bloodseeker"
-]]
-    
-    local sample_bot_code = [[
-    local hero = ...
-    if hero.is_attacking() then
-        return
-    end
-    local units = hero.find_units_in_radius(
-        hero.get_position(),
-        300.0,
-        hero.constants.DOTA_UNIT_TARGET_TEAM_ENEMY,
-        hero.constants.DOTA_UNIT_TARGET_HERO,
-        hero.constants.DOTA_UNIT_TARGET_FLAG_NONE,
-        hero.constants.FIND_ANY_ORDER
-    )
-    if #units > 0 then
-        hero.execute_order(
-            hero.constants.DOTA_UNIT_ORDER_ATTACK_TARGET,
-            units[1].get_entity_index(),
-            nil,
-            nil,
-            false
-        )
-    end
-]]
+
+    default_ai = require("bot/default_ai")
+    local sample_choose_hero_code = default_ai.chooser
+    local sample_bot_code = default_ai.action
 
     CreateHTTPRequest( "GET", "http://192.168.179.129:8080/get_script?token=THISISDEMO" ):Send( function( result )
         json_code = result["Body"] --{"team_num": ,"script": }
@@ -266,20 +248,13 @@ function Rounds:PrepareRoundPlayerScripts(on_done)
     end)
 end
 
-function table.shuffle(x)
-	for i = #x, 2, -1 do
-		local j = math.random(i)
-		x[i], x[j] = x[j], x[i]
-	end
-
-    return x
-end
-
 function Rounds:ChooseHeros(chooser_scripts)
     -- TODO: http fetch the real hero chooser code
     -- TODO: add hero chooser fetch flag so that game only starts
     -- when hero is added
     print("choosing heros")
+
+    local choices = {}
 
     -- split teams
     local team_count = Config.candidates_count / Config.candidates_per_team
@@ -301,9 +276,9 @@ function Rounds:ChooseHeros(chooser_scripts)
         local cur_team_id = AVAILABLE_TEAMS[i]
 
         for _, candidate_num in ipairs(cur_candidate) do
-            print("chooser of " .. tostring(candidate_num) .. tostring(chooser_scripts[candidate_num]))
+            -- print("chooser of " .. tostring(candidate_num), tostring(chooser_scripts[candidate_num]))
             local chooser = Sandbox:LoadChooseHeroScript(chooser_scripts[candidate_num])
-            local hero_name = Sandbox:RunChooseHero(chooser, self.round_count)
+            local hero_name = Sandbox:RunChooseHero(chooser)
             local player_id = self.candidate_to_player[candidate_num]
             local player_owner = PlayerResource:GetPlayer(player_id)
             print("player owner: " .. tostring(player_owner) .. "team id " .. tostring(cur_team_id))
@@ -320,8 +295,11 @@ function Rounds:ChooseHeros(chooser_scripts)
 
             Rounds:InitCandidateHero(candidate_hero)
             self.heros[candidate_num] = candidate_hero
+            choices[candidate_num] = hero_name
         end
     end
+
+    table.insert(self.history.choices, choices)
 end
 
 function Rounds:PrepareBeginRound()
@@ -388,7 +366,7 @@ end
 
 function Rounds:BeginRound(bot_scripts)
 
-    local round_hint = "Round #" .. self.round_count .. "begins!!"
+    local round_hint = "Round #" .. self.round_count .. " begins!!"
     -- TODO: How to display the message??
     -- this is not working :(
     --Msg(round_hint)
@@ -433,11 +411,28 @@ function Rounds:BeginRound(bot_scripts)
         local hero = self.heros[candidate_num]
         if hero then
             local script = bot_scripts[candidate_num]
-            BotScriptEnv:AttachScriptOnUnit(hero, script)   
+            BotScriptEnv:AttachScriptOnUnit(hero, script)
         end
     end
 end
 
 if not Rounds.heros then Rounds:Init() end
+
+Sandbox:SetupGameInfo{
+    GetRoundCount     = function()
+        return Rounds.round_count
+    end,
+    GetHistoryScores  = function(round)
+        local scores = Rounds.history.scores[round]
+        return deepcopy(scores)
+    end,
+    GetHistoryChoices = function(round)
+        local choices = Rounds.history.choices[round]
+        return deepcopy(choices)
+    end,
+    GetCandidates = function()
+        return deepcopy(Config.candidates)
+    end
+}
 
 GameRules.Rounds = Rounds
