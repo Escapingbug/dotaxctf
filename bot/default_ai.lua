@@ -79,11 +79,6 @@ if #units > 0 then
     )
 end
 
-if type(ctx) == "table" then
-    ctx = 1
-else
-    ctx = ctx + 1
-end
 return ctx
 ]]
 
