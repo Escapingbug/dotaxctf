@@ -33,9 +33,9 @@ function Rounds:Init()
 
     self.available_players = {}
 
-    -- player id to team number
-    self.player_to_team = {}
-    self.team_to_player = {}
+    -- player id to candidate number
+    self.player_to_candidate = {}
+    self.candidate_to_player = {}
 end
 
 function Rounds:InitGameMode()
@@ -58,13 +58,13 @@ end
 function Rounds:CleanupLivingHeros()
     print("clean up heros..")
     -- TODO: delete play?
-    for team_num, hero in pairs(self.heros) do
+    for candidate_num, hero in pairs(self.heros) do
         if hero:IsAlive() then
-            local team_score = self.scores_this_round[team_num]
-            if team_score == nil then
-                team_score = 0
+            local candidate_score = self.scores_this_round[candidate_num]
+            if candidate_score == nil then
+                candidate_score = 0
             end
-            self.scores_this_round[team_num] = team_score + Config.extra_score_for_winner
+            self.scores_this_round[candidate_num] = candidate_score + Config.extra_score_for_winner
         end
 
         hero:RemoveSelf()
@@ -79,7 +79,7 @@ end
 ]]
 function Rounds:SetupBotPlayers()
     print(".. debug ? " .. tostring(debug.sethook))
-    for team_id, team_name in pairs(Config.teams) do
+    for team_id, team_name in pairs(Config.candidates) do
         local ob_hero = GameRules:AddBotPlayerWithEntityScript(
             "npc_dota_hero_abaddon",
             team_name,
@@ -94,8 +94,8 @@ function Rounds:SetupBotPlayers()
         local player_id = ob_hero:GetPlayerID()
         ob_hero:RemoveSelf()
         print("adding player id " .. tostring(player_id) .. " to team " .. tostring(team_id))
-        self.player_to_team[player_id] = team_id
-        self.team_to_player[team_id] = player_id
+        self.player_to_candidate[player_id] = team_id
+        self.candidate_to_player[team_id] = player_id
     end
 end
 
@@ -103,10 +103,10 @@ function Rounds:SetupLastHitListener()
     ListenToGameEvent("last_hit", function(event)
         local entity_killed = event["EntKilled"]
         local player_id = event["PlayerID"]
-        local team_name = self.player_to_team[player_id]
+        local candidate_name = self.player_to_candidate[player_id]
         -- TODO: add scores
         print("got last hit! " .. entity_killed .. " " .. player_id)
-        print("last hit team name " .. tostring(team_name))
+        print("last hit candidate name " .. tostring(candidate_name))
     end, nil)
 end
 
@@ -147,7 +147,7 @@ function Rounds:NextRound(scripts)
     )
 end
 
-function Rounds:InitTeamHero(hero)
+function Rounds:InitCandidateHero(hero)
     hero:SetRespawnsDisabled(true)
 end
 
@@ -218,45 +218,44 @@ function Rounds:ChooseHeros(chooser_scripts)
     print("choosing heros")
 
     -- split teams
-    local team_count = Config.team_count / Config.team_player_count
+    local team_count = Config.team_count / Config.candidates_count
     local team_config = {}
 
-    for team_id, _ in pairs(Config.teams) do
-        table.insert(team_config, team_id)
+    for candidate_num, _ in pairs(Config.candidates) do
+        table.insert(team_config, candidate_num)
     end
 
     team_config = table.shuffle(team_config)
     print("team config " .. GameRules.inspect(team_config))
 
     for i = 1, team_count do
-        -- cur_team: team_num (of ctf) for current team
-        local cur_team = {}
-        for _ = 1, Config.team_player_count do
-            table.insert(cur_team, table.remove(team_config, 1))
+        local cur_candidate = {}
+        for _ = 1, Config.candidates_count do
+            table.insert(cur_candidate, table.remove(team_config, 1))
         end
 
         local cur_team_id = AVAILABLE_TEAMS[i]
 
-        for _, team_num in ipairs(cur_team) do
-            print("chooser of " .. tostring(team_num) .. tostring(chooser_scripts[team_num]))
-            local chooser = Sandbox:LoadChooseHeroScript(chooser_scripts[team_num])
+        for _, candidate_num in ipairs(cur_candidate) do
+            print("chooser of " .. tostring(candidate_num) .. tostring(chooser_scripts[candidate_num]))
+            local chooser = Sandbox:LoadChooseHeroScript(chooser_scripts[candidate_num])
             local hero_name = Sandbox:RunChooseHero(chooser, self.round_count)
-            local player_id = self.team_to_player[team_num]
+            local player_id = self.candidate_to_player[candidate_num]
             local player_owner = PlayerResource:GetPlayer(player_id)
             print("player owner: " .. tostring(player_owner) .. "team id " .. tostring(cur_team_id))
-            local team_hero = CreateUnitByName(
+            local candidate_hero = CreateUnitByName(
                 hero_name,
-                Config.hero_locations[team_num],
+                Config.hero_locations[candidate_num],
                 true, -- findClearSpace
                 nil, -- npcowner
                 player_owner, -- entity owner
                 cur_team_id
             )
 
-            print("check player and team .. " .. tostring(team_hero:GetPlayerID()) .. " " .. tostring(team_hero:GetTeam()))
+            print("check player and team .. " .. tostring(candidate_hero:GetPlayerID()) .. " " .. tostring(candidate_hero:GetTeam()))
 
-            Rounds:InitTeamHero(team_hero)
-            self.heros[team_num] = team_hero
+            Rounds:InitCandidateHero(candidate_hero)
+            self.heros[candidate_num] = candidate_hero
         end
     end
 end
@@ -297,8 +296,8 @@ function Rounds:BeginRound(bot_scripts)
                 for team_id, _ in ipairs(AVAILABLE_TEAMS) do
                     team_alive_counts[team_id] = 0
                 end
-                for team_num, _ in pairs(Config.teams) do
-                    local hero = self.heros[team_num]
+                for candidate_num, _ in pairs(Config.candidates) do
+                    local hero = self.heros[candidate_num]
                     if hero:IsAlive() then
                         local team = hero:GetTeam()
                         team_alive_counts[team] = team_alive_counts[team] + 1
@@ -328,10 +327,10 @@ function Rounds:BeginRound(bot_scripts)
         }
     )
 
-    for team_num, team_name in pairs(Config.teams) do
-        local hero = self.heros[team_num]
+    for candidate_num, _ in pairs(Config.candidates) do
+        local hero = self.heros[candidate_num]
         if hero then
-            local script = bot_scripts[team_num]
+            local script = bot_scripts[candidate_num]
             BotScriptEnv:AttachScriptOnUnit(hero, script)   
         end
     end
