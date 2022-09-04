@@ -250,7 +250,7 @@ function Rounds:ChooseHeros(chooser_scripts)
     print("choosing heros")
 
     -- split teams
-    local team_count = Config.candidates_count / Config.candidats_per_team
+    local team_count = Config.candidates_count / Config.candidates_per_team
     local team_config = {}
 
     for candidate_num, _ in pairs(Config.candidates) do
@@ -262,7 +262,7 @@ function Rounds:ChooseHeros(chooser_scripts)
 
     for i = 1, team_count do
         local cur_candidate = {}
-        for _ = 1, Config.candidaets_per_team do
+        for _ = 1, Config.candidates_per_team do
             table.insert(cur_candidate, table.remove(team_config, 1))
         end
 

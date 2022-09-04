@@ -6,7 +6,7 @@ function Config:Init()
     self.config_inited = true
 
     self.extra_score_for_winner = 1
-    self.candidats_per_team = 1
+    self.candidates_per_team = 1
     self.candidates = {
         [19] = "team1",
         [20] = "team2",
