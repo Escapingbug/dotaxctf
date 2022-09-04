@@ -2,6 +2,7 @@ require("config")
 require("bot_script_env")
 require("lib/timer")
 require("lib/inspect")
+require("lib/table")
 
 AVAILABLE_TEAMS = {
     DOTA_TEAM_GOODGUYS,
@@ -35,7 +36,7 @@ function Rounds:Init()
     -- team number => scores
     self.scores_this_round = {}
     Rounds:CleanRoundScores()
-    
+
     -- team number => hero object
     self.heros = {}
 
@@ -44,13 +45,18 @@ function Rounds:Init()
     -- player id to candidate number
     self.player_to_candidate = {}
     self.candidate_to_player = {}
+
+    self.history = {
+        scores = {},
+        choices = {},
+    }
 end
 
 function Rounds:InitGameMode()
     print("Rounds:InitGameMode...")
     GameRules:SetUseUniversalShopMode(true)
     -- for faster entering
-	GameRules:SetPreGameTime(3.0)
+    GameRules:SetPreGameTime(3.0)
 
     -- disable auto gold gain
     GameRules:SetStartingGold(0)
@@ -102,6 +108,7 @@ function Rounds:SetupLastHitListener()
         local _entity_killed = event["EntKilled"]
         local player_id = event["PlayerID"]
         local candidate = self.player_to_candidate[player_id]
+        print("candidate", candidate, self.scores_this_round[candidate])
         self.scores_this_round[candidate] = self.scores_this_round[candidate] + 1
     end, nil)
 end
@@ -127,12 +134,6 @@ function Rounds:NextRound(scripts)
     print("Next Round")
     self.round_count = self.round_count + 1
 
-    -- TODO: implement game info
-    Sandbox:SetupGameInfo({
-        GetHistoryScores = nil,
-        GetHistoryChoices = nil,
-    })
-
     Rounds:CleanupLivingHeros()
     Rounds:ChooseHeros(scripts["chooser_scripts"])
     Timers:CreateTimer(
@@ -149,34 +150,10 @@ end
 
 function Rounds:PrepareRoundPlayerScripts(on_done)
     -- TODO: real http access to the player scripts
-    local sample_choose_hero_code = [[
-    local round = ...
-    return "npc_dota_hero_bloodseeker"
-]]
-    
-    local sample_bot_code = [[
-    local hero = ...
-    if hero.is_attacking() then
-        return
-    end
-    local units = hero.find_units_in_radius(
-        hero.get_position(),
-        300.0,
-        hero.constants.DOTA_UNIT_TARGET_TEAM_ENEMY,
-        hero.constants.DOTA_UNIT_TARGET_HERO,
-        hero.constants.DOTA_UNIT_TARGET_FLAG_NONE,
-        hero.constants.FIND_ANY_ORDER
-    )
-    if #units > 0 then
-        hero.execute_order(
-            hero.constants.DOTA_UNIT_ORDER_ATTACK_TARGET,
-            units[1].get_entity_index(),
-            nil,
-            nil,
-            false
-        )
-    end
-]]
+
+    default_ai = require("bot/default_ai")
+    local sample_choose_hero_code = default_ai.chooser
+    local sample_bot_code = default_ai.action
 
     Timers:CreateTimer(3, function ()
         local chooser_scripts = {
@@ -196,15 +173,6 @@ function Rounds:PrepareRoundPlayerScripts(on_done)
 
         on_done(scripts)
     end)
-end
-
-function table.shuffle(x)
-	for i = #x, 2, -1 do
-		local j = math.random(i)
-		x[i], x[j] = x[j], x[i]
-	end
-
-    return x
 end
 
 function Rounds:ChooseHeros(chooser_scripts)
@@ -233,9 +201,9 @@ function Rounds:ChooseHeros(chooser_scripts)
         local cur_team_id = AVAILABLE_TEAMS[i]
 
         for _, candidate_num in ipairs(cur_candidate) do
-            print("chooser of " .. tostring(candidate_num) .. tostring(chooser_scripts[candidate_num]))
+            print("chooser of " .. tostring(candidate_num), tostring(chooser_scripts[candidate_num]))
             local chooser = Sandbox:LoadChooseHeroScript(chooser_scripts[candidate_num])
-            local hero_name = Sandbox:RunChooseHero(chooser, self.round_count)
+            local hero_name = Sandbox:RunChooseHero(chooser)
             local player_id = self.candidate_to_player[candidate_num]
             local player_owner = PlayerResource:GetPlayer(player_id)
             print("player owner: " .. tostring(player_owner) .. "team id " .. tostring(cur_team_id))
@@ -365,11 +333,25 @@ function Rounds:BeginRound(bot_scripts)
         local hero = self.heros[candidate_num]
         if hero then
             local script = bot_scripts[candidate_num]
-            BotScriptEnv:AttachScriptOnUnit(hero, script)   
+            BotScriptEnv:AttachScriptOnUnit(hero, script)
         end
     end
 end
 
 if not Rounds.heros then Rounds:Init() end
+
+Sandbox:SetupGameInfo{
+    GetRoundCount     = function()
+        return Rounds.round_count
+    end,
+    GetHistoryScores  = function(round)
+        local scores = Rounds.history.scores[round]
+        return table.deepcopy(scores)
+    end,
+    GetHistoryChoices = function(round)
+        local choices = Rounds.history.choices[round]
+        return table.deepcopy(choices)
+    end,
+}
 
 GameRules.Rounds = Rounds

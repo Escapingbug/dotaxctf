@@ -18,7 +18,7 @@ function Config:Init()
     self.round_time = 60
     self.hero_locations = {
         [19] = Vector(100, 100),
-        [20] = Vector(200, 100)
+        [20] = Vector(500, 500)
     }
     -- how many seconds to wait after choosing hero
     -- and action
