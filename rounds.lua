@@ -55,6 +55,10 @@ function Rounds:CleanRoundScores()
         req:SetHTTPRequestRawPostBody("application/json", json.encode(self.scores_this_round))
         req:Send(function() end)
     end
+    self.scores_this_round = {}
+    for candidate_num, _ in pairs(Config.candidates) do
+        self.scores_this_round[candidate_num] = 0
+    end
     Rounds:UpdateScoresPanel()
 end
 
