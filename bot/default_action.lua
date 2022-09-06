@@ -36,6 +36,7 @@ if hero:IsAttacking() then
     return ctx
 end
 
+hero:PurchaseItem("item_witch_blade")
 
 DOTA_UNIT_TARGET_TEAM_ENEMY = 2
 DOTA_UNIT_TARGET_HERO = 1

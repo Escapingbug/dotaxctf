@@ -29,9 +29,11 @@ function Config:Init()
         radius = 1e6,
     }
 
+    local server_base = "http://127.0.0.1:8000"
+    local server_token = "THISISDEMO"
     self.server = {
-        url_get_scripts = "http://127.0.0.1:8000/scripts?token=THISISDEMO",
-        url_post_scores = "http://127.0.0.1:8000/scores?token=THISISDEMO",
+        url_get_scripts = string.format("%s/scripts?token=%s", server_base, server_token),
+        url_post_scores = string.format("%s/scores?token=%s",  server_base, server_token),
     }
 end
 
