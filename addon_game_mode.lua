@@ -28,7 +28,9 @@ end
 function CAddonTemplateGameMode:InitGameMode()
 	print( "Template addon is loaded." )
 	Rounds:InitGameMode()
-	GameRules:GetGameModeEntity():SetThink( "OnThink", self, "GlobalThink", 2 )
+	local game_mode = GameRules:GetGameModeEntity()
+	game_mode:SetThink( "OnThink", self, "GlobalThink", 2 )
+	game_mode:SetFogOfWarDisabled(true)
 end
 
 -- Evaluate the state of the game
