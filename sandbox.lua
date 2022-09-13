@@ -94,6 +94,8 @@ function Sandbox:SandboxHero(hero, readonly)
     sandboxed.GetIntellect  = copy_method(hero, "GetIntellect")
     sandboxed.GetStrength   = copy_method(hero, "GetStrength")
 
+    -- TODO: level up
+
     return sandboxed
 end
 
@@ -172,6 +174,25 @@ function Sandbox:SandboxBaseNPC(npc, readonly)
             Position = position,
             Queue = queue
         }
+    end
+
+    function sandboxed:PurchaseItem(item_name)
+        local item = CreateItem(item_name, npc, npc)
+        if item == nil or not item:IsPurchasable() then
+            return false
+        end
+
+        local gold_own = npc:GetGold()
+        local gold_cost = item:GetCost()
+        local gold_left = gold_own - gold_cost
+        if gold_left < 0 then
+            return false
+        end
+
+        -- we only use unreliable gold
+        npc:SetGold(gold_left, false)
+        npc:AddItem(item)
+        return true
     end
 
     return sandboxed

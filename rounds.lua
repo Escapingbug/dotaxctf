@@ -169,6 +169,8 @@ function Rounds:BeginGame()
         Rounds:SetupBotPlayers()
         Rounds:SetupLastHitListener()
 
+        Rounds:SetupShop()
+
         Rounds:PrepareBeginRound()
         self.game_started = true
         -- all next rounds should be called on timer set by next round
@@ -186,7 +188,7 @@ function Rounds:NextRound(scripts)
     self.round_count = self.round_count + 1
 
     Rounds:CleanupLivingHeros()
-    Rounds:ChooseHeros(scripts["chooser_scripts"])
+    Rounds:ChooseHeros(scripts["chooser_scripts"], scripts["attributes"])
     Timers:CreateTimer(
         Config.round_begin_delay,
         function ()
@@ -195,39 +197,50 @@ function Rounds:NextRound(scripts)
     )
 end
 
-function Rounds:InitCandidateHero(hero)
+function Rounds:InitCandidateHero(hero, attr)
     hero:SetRespawnsDisabled(true)
+
+    attr = attr or {}
+    hero:SetGold(attr.gold or 0, false)
+    hero:AddExperience(attr.experience or 0, DOTA_ModifyXP_Unspecified, false, false)
+    hero:ModifyStrength(attr.strength or 0)
+    hero:ModifyIntellect(attr.intelligence or 0)
+    hero:ModifyAgility(attr.agility or 0)
 end
 
 function Rounds:PrepareRoundPlayerScripts(on_done)
     CreateHTTPRequest("GET", Config.server.url_get_scripts):Send(function(result)
         local body = result["Body"]
         print("got body: " .. body)
-        json_code = json.decode(body) -- {"team_num": ,"script": }
+        json_code = json.decode(body) -- {"candidate_num": ,"script": }
         local chooser_scripts = {}
         local bot_scripts = {}
+        local attributes = {}
         if json_code ~= nil then
-            for team_num, scripts in pairs(json_code) do
-                chooser_scripts[tonumber(team_num)] = scripts["choose_hero"]
-                bot_scripts[tonumber(team_num)] = scripts["action"]
+            for candidate_num, scripts in pairs(json_code) do
+                chooser_scripts[tonumber(candidate_num)] = scripts["choose_hero"]
+                bot_scripts[tonumber(candidate_num)] = scripts["action"]
+                attributes[tonumber(candidate_num)] = scripts["attribute"]
             end
         else
             for candidate_num, _ in pairs(Config.candidates) do
                 chooser_scripts[candidate_num] = ""
                 bot_scripts[candidate_num] = ""
+                attributes[candidate_num] = {}
             end
         end
 
         local scripts = {
             chooser_scripts = chooser_scripts,
-            bot_scripts = bot_scripts
+            bot_scripts = bot_scripts,
+            attributes = attributes,
         }
 
         on_done(scripts)
     end)
 end
 
-function Rounds:ChooseHeros(chooser_scripts)
+function Rounds:ChooseHeros(chooser_scripts, attributes)
     -- TODO: add hero chooser fetch flag so that game only starts
     -- when hero is added
     print("choosing heros")
@@ -271,7 +284,7 @@ function Rounds:ChooseHeros(chooser_scripts)
 
             print("check player and team .. " .. tostring(candidate_hero:GetPlayerID()) .. " " .. tostring(candidate_hero:GetTeam()))
 
-            Rounds:InitCandidateHero(candidate_hero)
+            Rounds:InitCandidateHero(candidate_hero, attributes[candidate_num])
             self.heros[candidate_num] = candidate_hero
             choices[candidate_num] = hero_name
         end
@@ -386,6 +399,16 @@ function Rounds:BeginRound(bot_scripts)
             BotScriptEnv:AttachScriptOnUnit(hero, script)
         end
     end
+end
+
+function Rounds:SetupShop()
+    local location = Config.shop.location
+    local shop = CreateUnitByName("dota_fountain", location, true, nil, nil, DOTA_TEAM_NEUTRALS)
+    shop:SetCanSellItems(true)
+    shop:SetIdleAcquire(false)
+    -- shop:SetShopType(DOTA_SHOP_HOME) -- not a shop
+    local trigger = SpawnDOTAShopTriggerRadiusApproximate(shop:GetAbsOrigin(), Config.shop.radius)
+    trigger:SetShopType(DOTA_SHOP_HOME)
 end
 
 if not Rounds.heros then Rounds:Init() end

@@ -47,7 +47,9 @@ def req_script(token: str):
             "attribute": {
                 "strength": 20,
                 "intelligence": 20,
-                "agility": 20
+                "agility": 20,
+                "gold": 3000,
+                "experience": 1000,
             }
         }
     
