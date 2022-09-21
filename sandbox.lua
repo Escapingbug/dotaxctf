@@ -93,6 +93,7 @@ function Sandbox:SandboxHero(hero, readonly)
     sandboxed.GetAgility    = copy_method(hero, "GetAgility")
     sandboxed.GetIntellect  = copy_method(hero, "GetIntellect")
     sandboxed.GetStrength   = copy_method(hero, "GetStrength")
+    sandboxed.GetGold       = copy_method(hero, "GetGold")
 
     return sandboxed
 end
