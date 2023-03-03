@@ -19,6 +19,8 @@ AVAILABLE_TEAMS = {
     DOTA_TEAM_CUSTOM_8,
 }
 
+Candidates = {}
+
 if Rounds == nil then
     Rounds = class({})
 end
@@ -40,7 +42,7 @@ function Rounds:UpdateScoresPanel()
         scores = {}
     }
     for candidate_num, score in pairs(self.scores_this_round) do
-        local name = Config.candidates[candidate_num]
+        local name = Candidates[candidate_num]
         scores_to_display.scores[name] = score
     end
     CustomGameEventManager:Send_ServerToAllClients(
@@ -59,7 +61,7 @@ function Rounds:CleanRoundScores()
         req:Send(function() end)
     end
     self.scores_this_round = {}
-    for candidate_num, _ in pairs(Config.candidates) do
+    for candidate_num, _ in pairs(Candidates) do
         self.scores_this_round[candidate_num] = 0
     end
     Rounds:UpdateScoresPanel()
@@ -69,7 +71,7 @@ function Rounds:AdjustScore(candidate, score_delta)
     if self.scores_this_round[candidate] == nil then
         self.scores_this_round[candidate] = 0
     end
-
+    
     self.scores_this_round[candidate] = self.scores_this_round[candidate] + score_delta
     Rounds:UpdateScoresPanel()
 end
@@ -77,21 +79,21 @@ end
 function Rounds:Init()
     print("rounds constructor called")
     self.game_started = false
-
+    
     self.round_count = 0
     -- team number => scores
     self.scores_this_round = {}
     Rounds:CleanRoundScores()
-
+    
     -- team number => hero object
     self.heros = {}
-
+    
     self.available_players = {}
-
+    
     -- player id to candidate number
     self.player_to_candidate = {}
     self.candidate_to_player = {}
-
+    
     self.history = {
         scores = {},
         choices = {},
@@ -115,6 +117,73 @@ function Rounds:InitGameMode()
 
 end
 
+function Rounds:InitFromServerAndBeginGame()
+    if #Candidates ~= 0 then
+        -- print("Already initialized")
+        return
+    end
+    print("requesting players from" .. Config.server.url_get_scripts)
+    local req = CreateHTTPRequest("GET", Config.server.url_get_scripts)
+    if req ~= nil then
+        req:Send(function(result)
+            local body = result["Body"]
+            print("got body: " .. body)
+
+            --[[
+                json structure:
+                {
+                    "1": {
+                        "team_name": "Eur3kA",
+                        "choose_hero": "{lua script}",
+                        "action": {lua script}",
+                        "attribute": {
+                            "strength": 20,
+                            "intelligence": 20,
+                            "agility": 20,
+                            "gold": 3000,
+                            "experience": 1000,
+                        }
+                    },
+                    "2": {
+                        "team_name": "FlappyPig",
+                        "choose_hero": "{lua script}",
+                        "action": "{lua script}",
+                        "attribute": {
+                            "strength": 20,
+                            "intelligence": 20,
+                            "agility": 20,
+                            "gold": 3000,
+                            "experience": 1000,
+                        }
+                    }
+                }
+            ]]
+            json_code = json.decode(body)
+            self.chooser_scripts = {}
+            self.bot_scripts = {}
+            self.attributes = {}
+
+            if json_code ~= nil then
+                for candidate_num, candidate_data in pairs(json_code) do
+                    Candidates[tonumber(candidate_num)] = candidate_data["team_name"]
+                    self.chooser_scripts[tonumber(candidate_num)] = candidate_data["choose_hero"]
+                    self.bot_scripts[tonumber(candidate_num)] = candidate_data["action"]
+                    self.attributes[tonumber(candidate_num)] = candidate_data["attribute"]
+                end
+            else
+                for candidate_num, _ in pairs(Candidates) do
+                    self.chooser_scripts[candidate_num] = ""
+                    self.bot_scripts[candidate_num] = ""
+                    self.attributes[candidate_num] = {}
+                end
+            end
+            Rounds:BeginGame()
+        end)
+    else
+        print("request failed")
+    end
+end
+
 function Rounds:CleanupLivingHeros()
     for _, hero in pairs(self.heros) do
         hero:RemoveSelf()
@@ -129,7 +198,7 @@ end
 ]]
 function Rounds:SetupBotPlayers()
     print(".. debug ? " .. tostring(debug.sethook))
-    for team_id, team_name in pairs(Config.candidates) do
+    for team_id, team_name in pairs(Candidates) do
         local ob_hero = GameRules:AddBotPlayerWithEntityScript(
             "npc_dota_hero_abaddon",
             team_name,
@@ -209,35 +278,13 @@ function Rounds:InitCandidateHero(hero, attr)
 end
 
 function Rounds:PrepareRoundPlayerScripts(on_done)
-    CreateHTTPRequest("GET", Config.server.url_get_scripts):Send(function(result)
-        local body = result["Body"]
-        print("got body: " .. body)
-        json_code = json.decode(body) -- {"candidate_num": ,"script": }
-        local chooser_scripts = {}
-        local bot_scripts = {}
-        local attributes = {}
-        if json_code ~= nil then
-            for candidate_num, scripts in pairs(json_code) do
-                chooser_scripts[tonumber(candidate_num)] = scripts["choose_hero"]
-                bot_scripts[tonumber(candidate_num)] = scripts["action"]
-                attributes[tonumber(candidate_num)] = scripts["attribute"]
-            end
-        else
-            for candidate_num, _ in pairs(Config.candidates) do
-                chooser_scripts[candidate_num] = ""
-                bot_scripts[candidate_num] = ""
-                attributes[candidate_num] = {}
-            end
-        end
+    local scripts = {
+        chooser_scripts = self.chooser_scripts,
+        bot_scripts = self.bot_scripts,
+        attributes = self.attributes,
+    }
 
-        local scripts = {
-            chooser_scripts = chooser_scripts,
-            bot_scripts = bot_scripts,
-            attributes = attributes,
-        }
-
-        on_done(scripts)
-    end)
+    on_done(scripts)
 end
 
 function Rounds:ChooseHeros(chooser_scripts, attributes)
@@ -251,7 +298,7 @@ function Rounds:ChooseHeros(chooser_scripts, attributes)
     local team_count = Config.candidates_count / Config.candidates_per_team
     local team_config = {}
 
-    for candidate_num, _ in pairs(Config.candidates) do
+    for candidate_num, _ in pairs(Candidates) do
         table.insert(team_config, candidate_num)
     end
 
@@ -308,7 +355,7 @@ function Rounds:GetLivingTeams()
     for team_id, _ in ipairs(AVAILABLE_TEAMS) do
         team_alive_counts[team_id] = 0
     end
-    for candidate_num, _ in pairs(Config.candidates) do
+    for candidate_num, _ in pairs(Candidates) do
         local hero = self.heros[candidate_num]
         if hero:IsAlive() then
             local team = hero:GetTeam()
@@ -335,7 +382,7 @@ function Rounds:RoundLimitedScoring()
     if #living_teams == 1 then
         -- we got an winning team!
         local winning_team = living_teams[1]
-        for candidate_num, _ in pairs(Config.candidates) do
+        for candidate_num, _ in pairs(Candidates) do
             local hero = self.heros[candidate_num]
             local team = hero:GetTeam()
             if team == winning_team then
@@ -346,7 +393,7 @@ function Rounds:RoundLimitedScoring()
         -- Multiple team is winning..
         -- we add scores to the living heros.
 
-        for candidate_num, _ in pairs(Config.candidates) do
+        for candidate_num, _ in pairs(Candidates) do
             local hero = self.heros[candidate_num]
             if hero:IsAlive() then
                 Rounds:AdjustScore(candidate_num, 1)
@@ -392,7 +439,7 @@ function Rounds:BeginRound(bot_scripts)
         }
     )
 
-    for candidate_num, _ in pairs(Config.candidates) do
+    for candidate_num, _ in pairs(Candidates) do
         local hero = self.heros[candidate_num]
         if hero then
             local script = bot_scripts[candidate_num]
@@ -426,7 +473,7 @@ Sandbox:SetupGameInfo{
         return deepcopy(choices)
     end,
     GetCandidates = function()
-        return deepcopy(Config.candidates)
+        return deepcopy(Candidates)
     end
 }
 

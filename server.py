@@ -15,7 +15,7 @@ DEFAULT_ACTION = read_file(os.path.join(curdir, "bot", "default_action.lua"))
 
 app = FastAPI()  
 
-team_nums = [19, 20]
+team_nums = [i for i in range(1, 17)]
 print("init success")
 
 
@@ -42,6 +42,7 @@ def req_script(token: str):
 
     for team_num in team_nums:
         req[team_num] = {
+            "team_name": f"r{team_num}kapig",
             "choose_hero": DEFAULT_CHOOSER,
             "action": DEFAULT_ACTION,
             "attribute": {
