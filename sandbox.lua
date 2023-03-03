@@ -179,7 +179,8 @@ function Sandbox:SandboxBaseNPC(npc, readonly)
 
     function sandboxed:PurchaseItem(item_name)
         local item = CreateItem(item_name, npc, npc)
-        if item == nil or not item:IsPurchasable() then
+        if item == nil or not item:IsPurchasable() or not npc:IsAlive() then
+            item:RemoveSelf()
             return false
         end
 
@@ -187,6 +188,7 @@ function Sandbox:SandboxBaseNPC(npc, readonly)
         local gold_cost = item:GetCost()
         local gold_left = gold_own - gold_cost
         if gold_left < 0 then
+            item:RemoveSelf()
             return false
         end
 
