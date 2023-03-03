@@ -13,7 +13,7 @@ function Config:Init()
     }
 
     self.extra_score_for_winner = 1
-    self.candidates_per_team = 1
+    self.candidates_per_team = 2
     
     self.candidates_count = 16
     
