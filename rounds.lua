@@ -129,6 +129,35 @@ function Rounds:InitFromServerAndBeginGame()
             local body = result["Body"]
             print("got body: " .. body)
 
+            --[[
+                json structure:
+                {
+                    "1": {
+                        "team_name": "Eur3kA",
+                        "choose_hero": "{lua script}",
+                        "action": {lua script}",
+                        "attribute": {
+                            "strength": 20,
+                            "intelligence": 20,
+                            "agility": 20,
+                            "gold": 3000,
+                            "experience": 1000,
+                        }
+                    },
+                    "2": {
+                        "team_name": "FlappyPig",
+                        "choose_hero": "{lua script}",
+                        "action": "{lua script}",
+                        "attribute": {
+                            "strength": 20,
+                            "intelligence": 20,
+                            "agility": 20,
+                            "gold": 3000,
+                            "experience": 1000,
+                        }
+                    }
+                }
+            ]]
             json_code = json.decode(body)
             self.chooser_scripts = {}
             self.bot_scripts = {}
