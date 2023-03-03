@@ -345,7 +345,7 @@ end
 function Rounds:GetLivingTeams()
     -- count team alive heros
     local team_alive_counts = {}
-    for _, team_id in ipairs(AVAILABLE_TEAMS) do
+    for _, team_id in pairs(AVAILABLE_TEAMS) do
         team_alive_counts[team_id] = 0
     end
     for candidate_num, _ in pairs(Candidates) do
