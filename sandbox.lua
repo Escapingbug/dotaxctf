@@ -179,7 +179,10 @@ function Sandbox:SandboxBaseNPC(npc, readonly)
 
     function sandboxed:PurchaseItem(item_name)
         local item = CreateItem(item_name, npc, npc)
-        if item == nil or not item:IsPurchasable() or not npc:IsAlive() then
+        if item == nil then
+            return false
+        end
+        if not item:IsPurchasable() or not npc:IsAlive() then
             item:RemoveSelf()
             return false
         end
