@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import List
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
 import uvicorn
@@ -20,7 +20,7 @@ print("init success")
 
 
 class ScoreThisRound(BaseModel):
-    scores: Dict[str, int]
+    scores: List[int]
     round_count: int
 
 
