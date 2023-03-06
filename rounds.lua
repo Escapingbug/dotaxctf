@@ -277,16 +277,6 @@ function Rounds:InitCandidateHero(hero, attr)
     hero:ModifyAgility(attr.agility or 0)
 end
 
-function Rounds:PrepareRoundPlayerScripts(on_done)
-    local scripts = {
-        chooser_scripts = self.chooser_scripts,
-        bot_scripts = self.bot_scripts,
-        attributes = self.attributes,
-    }
-
-    on_done(scripts)
-end
-
 function Rounds:ChooseHeros(chooser_scripts, attributes)
     -- TODO: add hero chooser fetch flag so that game only starts
     -- when hero is added
@@ -341,9 +331,12 @@ function Rounds:ChooseHeros(chooser_scripts, attributes)
 end
 
 function Rounds:PrepareBeginRound()
-    Rounds:PrepareRoundPlayerScripts(function (scripts)
-        Rounds:NextRound(scripts)
-    end)
+    local scripts = {
+        chooser_scripts = self.chooser_scripts,
+        bot_scripts = self.bot_scripts,
+        attributes = self.attributes,
+    }
+    Rounds:NextRound(scripts)
 end
 
 --[[
@@ -352,7 +345,7 @@ end
 function Rounds:GetLivingTeams()
     -- count team alive heros
     local team_alive_counts = {}
-    for team_id, _ in ipairs(AVAILABLE_TEAMS) do
+    for _, team_id in pairs(AVAILABLE_TEAMS) do
         team_alive_counts[team_id] = 0
     end
     for candidate_num, _ in pairs(Candidates) do
