@@ -5,11 +5,11 @@ end
 function Config:Init()
     self.config_inited = true
 
-    local server_base = "http://127.0.0.1:8000"
-    local server_token = "THISISDEMO"
-    self.server = {
-        url_get_scripts = string.format("%s/scripts?token=%s", server_base, server_token),
-        url_post_scores = string.format("%s/scores?token=%s",  server_base, server_token),
+    local server_base = "http://xgame.challenge.xctf.org.cn/api/ct/admin/xgame/game"
+    self.server_token = "redacted"
+    self.server_url = {
+        init = string.format("%s/init", server_base),
+        service = string.format("%s/service", server_base), -- GET for round init, POST for round end
     }
 
     self.extra_score_for_winner = 1

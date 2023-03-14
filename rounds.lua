@@ -83,7 +83,6 @@ function Rounds:Init()
     self.round_count = 0
     -- team number => scores
     self.scores_this_round = {}
-    Rounds:CleanRoundScores()
     
     -- team number => hero object
     self.heros = {}
@@ -122,62 +121,24 @@ function Rounds:InitFromServerAndBeginGame()
         -- print("Already initialized")
         return
     end
-    print("requesting players from" .. Config.server.url_get_scripts)
-    local req = CreateHTTPRequest("GET", Config.server.url_get_scripts)
+    print("fetching init data from server")
+    local req = CreateHTTPRequest("GET", Config.server_url.init)
     if req ~= nil then
+        req:SetHTTPRequestHeaderValue("X-CLIENT-SECRET", Config.server_token)
         req:Send(function(result)
             local body = result["Body"]
             print("got body: " .. body)
 
-            --[[
-                json structure:
-                {
-                    "1": {
-                        "team_name": "Eur3kA",
-                        "choose_hero": "{lua script}",
-                        "action": {lua script}",
-                        "attribute": {
-                            "strength": 20,
-                            "intelligence": 20,
-                            "agility": 20,
-                            "gold": 3000,
-                            "experience": 1000,
-                        }
-                    },
-                    "2": {
-                        "team_name": "FlappyPig",
-                        "choose_hero": "{lua script}",
-                        "action": "{lua script}",
-                        "attribute": {
-                            "strength": 20,
-                            "intelligence": 20,
-                            "agility": 20,
-                            "gold": 3000,
-                            "experience": 1000,
-                        }
-                    }
-                }
-            ]]
-            json_code = json.decode(body)
-            self.chooser_scripts = {}
-            self.bot_scripts = {}
-            self.attributes = {}
+            json_data = json.decode(body)
 
-            if json_code ~= nil then
-                for candidate_num, candidate_data in pairs(json_code) do
-                    Candidates[tonumber(candidate_num)] = candidate_data["team_name"]
-                    self.chooser_scripts[tonumber(candidate_num)] = candidate_data["choose_hero"]
-                    self.bot_scripts[tonumber(candidate_num)] = candidate_data["action"]
-                    self.attributes[tonumber(candidate_num)] = candidate_data["attribute"]
+            if json_data ~= nil and json_data.code == "AD-000000" then
+                for _, team in pairs(json_data.data.teams) do
+                    Candidates[team.team_id] = team.team_name
                 end
+                Rounds:BeginGame()
             else
-                for candidate_num, _ in pairs(Candidates) do
-                    self.chooser_scripts[candidate_num] = ""
-                    self.bot_scripts[candidate_num] = ""
-                    self.attributes[candidate_num] = {}
-                end
+                print("failed to fetch init data from server, aborting")
             end
-            Rounds:BeginGame()
         end)
     else
         print("request failed")
