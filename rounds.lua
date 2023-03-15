@@ -79,8 +79,10 @@ end
 function Rounds:Init()
     print("rounds constructor called")
     self.game_started = false
+    self.initialized = false
     
     self.round_count = 0
+    self.task_id = ""
     -- team number => scores
     self.scores_this_round = {}
     
@@ -117,8 +119,7 @@ function Rounds:InitGameMode()
 end
 
 function Rounds:InitFromServerAndBeginGame()
-    if #Candidates ~= 0 then
-        -- print("Already initialized")
+    if self.initialized then
         return
     end
     print("fetching init data from server")
@@ -135,6 +136,7 @@ function Rounds:InitFromServerAndBeginGame()
                 for _, team in pairs(json_data.data.teams) do
                     Candidates[team.team_id] = team.team_name
                 end
+                self.initialized = true
                 Rounds:BeginGame()
             else
                 print("failed to fetch init data from server, aborting")
@@ -215,8 +217,6 @@ function Rounds:NextRound(scripts)
         table.insert(self.history.scores, last_scores)
     end
 
-    self.round_count = self.round_count + 1
-
     Rounds:CleanupLivingHeros()
     Rounds:ChooseHeros(scripts["chooser_scripts"], scripts["attributes"])
     Timers:CreateTimer(
@@ -249,31 +249,31 @@ function Rounds:ChooseHeros(chooser_scripts, attributes)
     local team_count = Config.candidates_count / Config.candidates_per_team
     local team_config = {}
 
-    for candidate_num, _ in pairs(Candidates) do
-        table.insert(team_config, candidate_num)
+    for candidate_id, _ in pairs(Candidates) do
+        table.insert(team_config, candidate_id)
     end
 
     team_config = table.shuffle(team_config)
     print("team config " .. GameRules.inspect(team_config))
 
     for i = 1, team_count do
-        local cur_candidate = {}
+        local cur_candidates = {}
         for _ = 1, Config.candidates_per_team do
-            table.insert(cur_candidate, table.remove(team_config, 1))
+            table.insert(cur_candidates, table.remove(team_config, 1))
         end
 
         local cur_team_id = AVAILABLE_TEAMS[i]
 
-        for _, candidate_num in ipairs(cur_candidate) do
-            -- print("chooser of " .. tostring(candidate_num), tostring(chooser_scripts[candidate_num]))
-            local chooser = Sandbox:LoadChooseHeroScript(chooser_scripts[candidate_num])
+        local cur_id = 1
+        for _, candidate_id in ipairs(cur_candidates) do
+            local chooser = Sandbox:LoadChooseHeroScript(chooser_scripts[candidate_id])
             local hero_name = Sandbox:RunChooseHero(chooser)
-            local player_id = self.candidate_to_player[candidate_num]
+            local player_id = self.candidate_to_player[candidate_id]
             local player_owner = PlayerResource:GetPlayer(player_id)
             print("player owner: " .. tostring(player_owner) .. "team id " .. tostring(cur_team_id))
             local candidate_hero = CreateUnitByName(
                 hero_name,
-                Config.hero_locations[candidate_num],
+                Config.hero_locations[cur_id],
                 true, -- findClearSpace
                 nil, -- npcowner
                 player_owner, -- entity owner
@@ -282,9 +282,10 @@ function Rounds:ChooseHeros(chooser_scripts, attributes)
 
             print("check player and team .. " .. tostring(candidate_hero:GetPlayerID()) .. " " .. tostring(candidate_hero:GetTeam()))
 
-            Rounds:InitCandidateHero(candidate_hero, attributes[candidate_num])
-            self.heros[candidate_num] = candidate_hero
-            choices[candidate_num] = hero_name
+            Rounds:InitCandidateHero(candidate_hero, attributes[candidate_id])
+            self.heros[candidate_id] = candidate_hero
+            choices[candidate_id] = hero_name
+            cur_id = cur_id + 1
         end
     end
 
@@ -292,12 +293,48 @@ function Rounds:ChooseHeros(chooser_scripts, attributes)
 end
 
 function Rounds:PrepareBeginRound()
-    local scripts = {
-        chooser_scripts = self.chooser_scripts,
-        bot_scripts = self.bot_scripts,
-        attributes = self.attributes,
-    }
-    Rounds:NextRound(scripts)
+    local req = CreateHTTPRequest("GET", Config.server_url.service)
+    print("fetching data for next round")
+    req:SetHTTPRequestHeaderValue("X-CLIENT-SECRET", Config.server_token)
+    if req == nil then
+        print("cannot create http request, aborting")
+        return
+    end
+    req:Send(function(result)
+        local body = result["Body"]
+        print("got body: " .. body)
+        
+        json_data = json.decode(body)
+        
+        if json_data == nil or json_data.code ~= "AD-000000" then
+            print("failed to parse data from server as json, aborting")
+            return
+        end
+        local data = json_data.data
+        local chooser_scripts = {}
+        local bot_scripts = {}
+        local attributes = {}
+        self.round_count = data.turn
+        self.task_id = data.task_id
+        for _, team in pairs(data.teams) do
+            chooser_scripts[team.team_id] = from_base64(team.select)
+            bot_scripts[team.team_id] = from_base64(team.act)
+            -- TODO: calc attributes
+            attributes[team.team_id] = {
+                strength = 20,
+                intelligence = 20,
+                agility = 20,
+                gold = 3000,
+                experience = 1000,
+            }
+        end
+        local scripts = {
+            chooser_scripts = chooser_scripts,
+            bot_scripts = bot_scripts,
+            attributes = attributes,
+        }
+        Rounds:NextRound(scripts)
+    end)
 end
 
 --[[
