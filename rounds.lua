@@ -20,6 +20,7 @@ AVAILABLE_TEAMS = {
 }
 
 Candidates = {}
+RestTeamId = ""
 
 if Rounds == nil then
     Rounds = class({})
@@ -112,6 +113,9 @@ function Rounds:Init()
     -- player id to candidate id
     self.player_to_candidate = {}
     self.candidate_to_player = {}
+
+    -- rest order => candidate id
+    self.candidate_rest_order = {}
     
     self.history = {
         scores = {},
@@ -165,9 +169,30 @@ function Rounds:InitFromServerAndBeginGame()
             json_data = json.decode(body)
 
             if json_data ~= nil and json_data.code == "AD-000000" then
+                local candidates_count = 0
                 for _, team in pairs(json_data.data.teams) do
                     Candidates[team.team_id] = team.team_name
+                    candidates_count = candidates_count + 1
+                    table.insert(self.candidate_rest_order, team.team_id)
                 end
+
+                -- set config vars
+                Config.candidate_count = candidates_count
+
+                if candidates_count <= 8 then
+                    Config.team_count = candidates_count
+                elseif candidates_count % 2 == 0 then
+                    Config.team_count = candidates_count / 2
+                else
+                    Config.team_count = (candidates_count - 1) / 2
+                end
+
+                if candidates_count > 8 then
+                    Config.candidates_per_team = 2
+                else
+                    Config.candidates_per_team = 1
+                end
+
                 self.initialized = true
                 Rounds:BeginGame()
             else
@@ -278,17 +303,18 @@ function Rounds:ChooseHeros(chooser_scripts, attributes)
     local choices = {}
 
     -- split teams
-    local team_count = Config.candidates_count / Config.candidates_per_team
     local team_config = {}
 
     for candidate_id, _ in pairs(Candidates) do
-        table.insert(team_config, candidate_id)
+        if candidate_id ~= RestTeamId then
+            table.insert(team_config, candidate_id)
+        end
     end
 
     team_config = table.shuffle(team_config)
     print("team config " .. GameRules.inspect(team_config))
 
-    for i = 1, team_count do
+    for i = 1, Config.team_count do
         local cur_candidates = {}
         for _ = 1, Config.candidates_per_team do
             table.insert(cur_candidates, table.remove(team_config, 1))
@@ -348,16 +374,15 @@ function Rounds:PrepareBeginRound()
         local attributes = {}
         self.round_count = data.turn
         self.task_id = data.task_id
+        -- for attributes calculation
+        local round_index = self.round_count / Config.total_rounds_count
         for _, team in pairs(data.teams) do
             chooser_scripts[team.team_id] = from_base64(team.select)
             bot_scripts[team.team_id] = from_base64(team.act)
-            -- TODO: calc attributes
+            local rank_index = (Config.candidate_count - team.rank) / (Config.candidate_count - 1)
             attributes[team.team_id] = {
-                strength = 20,
-                intelligence = 20,
-                agility = 20,
-                gold = 3000,
-                experience = 1000,
+                gold = (1 - round_index) * ((1 - rank_index) * 600 + rank_index * 1200) + round_index * ((1 - rank_index) * 5000 + rank_index * 10000),
+                experience = round_index * 64400,
             }
         end
         local scripts = {
@@ -365,6 +390,10 @@ function Rounds:PrepareBeginRound()
             bot_scripts = bot_scripts,
             attributes = attributes,
         }
+        -- if total_rounds_count is odd, candidates will rest in turns
+        if Config.candidate_count % 2 ~= 0 then
+            RestTeamId = self.candidate_rest_order[(self.round_count - 1) % Config.candidate_count + 1]
+        end
         Rounds:NextRound(scripts)
     end)
 end
@@ -378,12 +407,17 @@ function Rounds:GetLivingTeams()
     for _, team_id in pairs(AVAILABLE_TEAMS) do
         team_alive_counts[team_id] = 0
     end
-    for candidate_num, _ in pairs(Candidates) do
-        local hero = self.heros[candidate_num]
+    for candidate_id, _ in pairs(Candidates) do
+        local hero = self.heros[candidate_id]
+        if hero == nil then
+            -- this happens when a candidate is resting
+            goto continue
+        end
         if hero:IsAlive() then
             local team = hero:GetTeam()
             team_alive_counts[team] = team_alive_counts[team] + 1
         end
+        ::continue::
     end
 
     -- when less than one team got alive heros, round should be over
@@ -412,11 +446,16 @@ function Rounds:RoundEndedScoring()
         local winning_team = living_teams[1]
         for candidate_id, _ in pairs(Candidates) do
             local hero = self.heros[candidate_id]
+            if hero == nil then
+                -- this happens when a candidate is resting
+                goto continue
+            end
             local team = hero:GetTeam()
             if team == winning_team then
                 self.wins_this_round[candidate_id] = true
                 Rounds:AdjustScore(candidate_id, 1)
             end
+            ::continue::
         end
     else
         -- Multiple teams won..
@@ -424,17 +463,23 @@ function Rounds:RoundEndedScoring()
 
         for candidate_id, _ in pairs(Candidates) do
             local hero = self.heros[candidate_id]
+            if hero == nil then
+                -- this happens when a candidate is resting
+                goto continue
+            end
+            local team = hero:GetTeam()
             if hero:IsAlive() then
                 self.wins_this_round[candidate_id] = true
                 Rounds:AdjustScore(candidate_id, 1)
             end
+            ::continue::
         end
     end
 end
 
 function Rounds:BeginRound(bot_scripts)
 
-    CustomGameEventManager:Send_ServerToAllClients("updateScores", self.scores_this_round)
+    Rounds:UpdateScoresPanel()
 
     Rounds:UpdateRoundTimerPanel(GameRules:GetDOTATime(false, false))
     Timers:CreateTimer(

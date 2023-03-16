@@ -13,12 +13,16 @@ function Config:Init()
     }
 
     self.extra_score_for_winner = 1
-    self.candidates_per_team = 2
     
-    self.candidates_count = 16
+    -- the 3 vars below will be set in Rounds:InitFromServerAndBeginGame()
+    self.candidate_count = 0
+    self.team_count = 0
+    self.candidates_per_team = 0
     
     self.round_time = 5 * 60
     self.hero_locations = {}
+
+    self.total_rounds_count = 60 -- 5 hours in total, 5 minutes per round
     
     for i = 0, 15 do
         self.hero_locations[i + 1] = Vector((i % 4) * 200 - 400, math.floor(i / 4) * 200 - 400)
