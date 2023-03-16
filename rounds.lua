@@ -51,18 +51,35 @@ function Rounds:UpdateScoresPanel()
     )
 end
 
-function Rounds:CleanRoundScores()
-    local req = CreateHTTPRequest("POST", Config.server.url_post_scores)
-    if req ~= nil then
-        req:SetHTTPRequestRawPostBody("application/json", json.encode({
-            scores = self.scores_this_round,
-            round_count = self.round_count
-        }))
-        req:Send(function() end)
+--[[
+    Send scores to server and reset to 0
+]]
+function Rounds:FlushRoundScores()
+    print("Flushing round scores")
+    local req = CreateHTTPRequest("POST", Config.server_url.service)
+    if req == nil then
+        print("Failed to create http request")
+        return
     end
+
+    local teams_data = {}
+    for candidate_id, score in pairs(self.scores_this_round) do
+        table.insert(teams_data, {
+            team_id = candidate_id,
+            score = score,
+            result = self.wins_this_round[candidate_id],
+        })
+    end
+    req:SetHTTPRequestHeaderValue("X-CLIENT-SECRET", Config.server_token)
+    req:SetHTTPRequestRawPostBody("application/json", json.encode({
+        task_id = self.task_id,
+        turn = self.round_count,
+        teams = teams_data
+    }))
+    req:Send(function() end)
     self.scores_this_round = {}
-    for candidate_num, _ in pairs(Candidates) do
-        self.scores_this_round[candidate_num] = 0
+    for candidate_id, _ in pairs(Candidates) do
+        self.scores_this_round[candidate_id] = 0
     end
     Rounds:UpdateScoresPanel()
 end
@@ -83,15 +100,16 @@ function Rounds:Init()
     
     self.round_count = 0
     self.task_id = ""
-    -- team number => scores
+    -- team id => scores
     self.scores_this_round = {}
+    self.wins_this_round = {}
     
-    -- team number => hero object
+    -- team id => hero object
     self.heros = {}
     
     self.available_players = {}
     
-    -- player id to candidate number
+    -- player id to candidate id
     self.player_to_candidate = {}
     self.candidate_to_player = {}
     
@@ -122,6 +140,20 @@ function Rounds:InitFromServerAndBeginGame()
     if self.initialized then
         return
     end
+
+    -- remove the host hero
+    FindUnitsInRadius(
+        DOTA_TEAM_FIRST,
+        Vector(0, 0),
+        nil, -- cacheUnit
+        1000,
+        DOTA_UNIT_TARGET_TEAM_BOTH,
+        DOTA_UNIT_TARGET_HERO,
+        DOTA_UNIT_TARGET_FLAG_PLAYER_CONTROLLED,
+        FIND_ANY_ORDER,
+        false -- canGrowCache
+    )[1]:RemoveSelf()
+
     print("fetching init data from server")
     local req = CreateHTTPRequest("GET", Config.server_url.init)
     if req ~= nil then
@@ -366,28 +398,35 @@ function Rounds:GetLivingTeams()
 end
 
 --[[
-    Scoring when time limit is reached
+    Scoring when the round ends
 ]]
-function Rounds:RoundLimitedScoring()
+function Rounds:RoundEndedScoring()
     local living_teams = Rounds:GetLivingTeams()
+
+    for candidate_id, _ in pairs(Candidates) do
+        self.wins_this_round[candidate_id] = false
+    end
+
     if #living_teams == 1 then
-        -- we got an winning team!
+        -- we got a winning team!
         local winning_team = living_teams[1]
-        for candidate_num, _ in pairs(Candidates) do
-            local hero = self.heros[candidate_num]
+        for candidate_id, _ in pairs(Candidates) do
+            local hero = self.heros[candidate_id]
             local team = hero:GetTeam()
             if team == winning_team then
-                Rounds:AdjustScore(candidate_num, 1)
+                self.wins_this_round[candidate_id] = true
+                Rounds:AdjustScore(candidate_id, 1)
             end
         end
     else
-        -- Multiple team is winning..
+        -- Multiple teams won..
         -- we add scores to the living heros.
 
-        for candidate_num, _ in pairs(Candidates) do
-            local hero = self.heros[candidate_num]
+        for candidate_id, _ in pairs(Candidates) do
+            local hero = self.heros[candidate_id]
             if hero:IsAlive() then
-                Rounds:AdjustScore(candidate_num, 1)
+                self.wins_this_round[candidate_id] = true
+                Rounds:AdjustScore(candidate_id, 1)
             end
         end
     end
@@ -397,8 +436,6 @@ function Rounds:BeginRound(bot_scripts)
 
     CustomGameEventManager:Send_ServerToAllClients("updateScores", self.scores_this_round)
 
-    Rounds:CleanRoundScores()
-
     Rounds:UpdateRoundTimerPanel(GameRules:GetDOTATime(false, false))
     Timers:CreateTimer(
         "round_limit_timer",
@@ -406,8 +443,8 @@ function Rounds:BeginRound(bot_scripts)
             endTime = Config.round_time,
             callback = function ()
                 Timers:RemoveTimer("round_periodic_timer")
-                -- Round limit is reached, we should count the living teams
-                Rounds:RoundLimitedScoring()
+                Rounds:RoundEndedScoring()
+                Rounds:FlushRoundScores()
                 Rounds:PrepareBeginRound()
             end
         }
@@ -421,6 +458,8 @@ function Rounds:BeginRound(bot_scripts)
                 local living_teams = Rounds:GetLivingTeams()
                 if #living_teams <= 1 then
                     Timers:RemoveTimer("round_limit_timer")
+                    Rounds:RoundEndedScoring()
+                    Rounds:FlushRoundScores()
                     Rounds:PrepareBeginRound()
                     return
                 else
