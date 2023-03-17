@@ -82,13 +82,8 @@ function Rounds:FlushScoresAndRunNextRound()
     req:Send(function(result)
         local body = result["Body"]
         print("[xctf Rounds:FlushRoundScores]" .. "got body: " .. body)
-        Rounds:UpdateScoresPanel()
         Rounds:PrepareBeginRound()
     end)
-    self.scores_this_round = {}
-    for candidate_id, _ in pairs(Candidates) do
-        self.scores_this_round[candidate_id] = 0
-    end
 end
 
 function Rounds:AdjustScore(candidate, score_delta)
@@ -380,9 +375,11 @@ function Rounds:PrepareBeginRound()
         local attributes = {}
         self.round_count = data.turn
         self.task_id = data.task_id
+        self.scores_this_round = {}
         -- for attributes calculation
         local round_index = self.round_count / Config.total_rounds_count
         for _, team in pairs(data.teams) do
+            self.scores_this_round[team.team_id] = team.score
             chooser_scripts[team.team_id] = from_base64(team.select)
             bot_scripts[team.team_id] = from_base64(team.act)
             local rank_index = (Config.candidate_count - team.rank) / (Config.candidate_count - 1)
