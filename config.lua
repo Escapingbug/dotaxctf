@@ -8,8 +8,8 @@ function Config:Init()
     local server_base = "http://xgame.challenge.xctf.org.cn/api/ct/admin/xgame/game"
     self.server_token = "redacted"
     self.server_url = {
-        init = string.format("%s/init", server_base),
-        service = string.format("%s/service", server_base), -- GET for round init, POST for round end
+        init = string.format("%s/init/", server_base),
+        service = string.format("%s/service/", server_base), -- GET for round init, POST for round end
     }
 
     self.extra_score_for_winner = 1
