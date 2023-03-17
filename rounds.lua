@@ -147,7 +147,7 @@ function Rounds:InitFromServerAndBeginGame()
     end
 
     -- remove the host hero
-    FindUnitsInRadius(
+    local host_hero = FindUnitsInRadius(
         DOTA_TEAM_FIRST,
         Vector(0, 0),
         nil, -- cacheUnit
@@ -157,7 +157,10 @@ function Rounds:InitFromServerAndBeginGame()
         DOTA_UNIT_TARGET_FLAG_PLAYER_CONTROLLED,
         FIND_ANY_ORDER,
         false -- canGrowCache
-    )[1]:RemoveSelf()
+    )[1]
+    if host_hero ~= nil then -- host_hero == nil when the game is restarted by console command
+        host_hero:RemoveSelf()
+    end
 
     print("[xctf Rounds:InitFromServerAndBeginGame()]" .. "fetching init data from server")
     local req = CreateHTTPRequest("GET", Config.server_url.init)
