@@ -378,6 +378,7 @@ function Rounds:PrepareBeginRound()
         self.scores_this_round = {}
         -- for attributes calculation
         local round_index = self.round_count / Config.total_rounds_count
+        round_index = math.min(round_index, 1) -- make sure it is not greater than 1
         for _, team in pairs(data.teams) do
             self.scores_this_round[team.team_id] = team.score
             chooser_scripts[team.team_id] = from_base64(team.select)
