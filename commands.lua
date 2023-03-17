@@ -7,6 +7,7 @@ function Commands:Init()
     self.help = [[
 === xctf 7th dotaxctf ===
 x rr - restart the round
+x fr - full restart
 === xctf 7th dotaxctf ===
 ]]
 
@@ -14,23 +15,24 @@ x rr - restart the round
 end
 
 function Commands_Main(command, operation)
-    if operation ~= "rr" then
+    if operation ~= "rr" and operation ~= "fr" then
         print(Commands.help)
         return
     end
     if operation == "rr" then
         Commands:RoundRestart()
+    elseif operation == "fr" then
+        Commands:FullRestart()
     end
 end
 
--- TODO: implement `x fr` command
--- function Commands:FullRestart()
---     Timers:RemoveTimer("round_periodic_timer")
---     Timers:RemoveTimer("round_limit_timer")
---     Rounds:CleanupLivingHeros()
---     Rounds.initialized = false
---     Rounds:InitFromServerAndBeginGame()
--- end
+function Commands:FullRestart()
+    Timers:RemoveTimer("round_periodic_timer")
+    Timers:RemoveTimer("round_limit_timer")
+    Rounds:CleanupLivingHeros()
+    Rounds.restarting = true
+    Rounds:InitFromServerAndBeginGame()
+end
 
 function Commands:RoundRestart()
     Timers:RemoveTimer("round_periodic_timer")

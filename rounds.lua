@@ -117,6 +117,9 @@ function Rounds:Init()
 
     -- rest order => candidate id
     self.candidate_rest_order = {}
+
+    -- to support `x fr` command
+    self.restarting = false
     
     self.history = {
         scores = {},
@@ -142,7 +145,7 @@ function Rounds:InitGameMode()
 end
 
 function Rounds:InitFromServerAndBeginGame()
-    if self.initialized then
+    if self.initialized and not self.restarting then
         return
     end
 
@@ -252,6 +255,11 @@ function Rounds:SetupLastHitListener()
 end
 
 function Rounds:BeginGame()
+    if self.restarting then
+        Rounds:PrepareBeginRound()
+        self.restarting = false
+        return
+    end
     if not self.game_started then
         -- TODO: use add bot player with entity script to add
         -- player so that we can listen to last hit to add
