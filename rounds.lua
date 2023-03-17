@@ -55,11 +55,11 @@ end
 --[[
     Send scores to server and reset to 0
 ]]
-function Rounds:FlushRoundScores()
-    print("Flushing round scores")
+function Rounds:FlushScoresAndRunNextRound()
+    print("[xctf Rounds:FlushRoundScores]" .. "Flushing round scores")
     local req = CreateHTTPRequest("POST", Config.server_url.service)
     if req == nil then
-        print("Failed to create http request")
+        print("[xctf Rounds:FlushRoundScores]" .. "Failed to create http request")
         return
     end
 
@@ -71,18 +71,24 @@ function Rounds:FlushRoundScores()
             result = self.wins_this_round[candidate_id],
         })
     end
-    req:SetHTTPRequestHeaderValue("X-CLIENT-SECRET", Config.server_token)
-    req:SetHTTPRequestRawPostBody("application/json", json.encode({
+    local json_data = json.encode({
         task_id = self.task_id,
         turn = self.round_count,
         teams = teams_data
-    }))
-    req:Send(function() end)
+    })
+    print("[xctf Rounds:FlushRoundScores]" .. "request body: " .. json_data)
+    req:SetHTTPRequestHeaderValue("X-CLIENT-SECRET", Config.server_token)
+    req:SetHTTPRequestRawPostBody("application/json", json_data)
+    req:Send(function(result)
+        local body = result["Body"]
+        print("[xctf Rounds:FlushRoundScores]" .. "got body: " .. body)
+        Rounds:UpdateScoresPanel()
+        Rounds:PrepareBeginRound()
+    end)
     self.scores_this_round = {}
     for candidate_id, _ in pairs(Candidates) do
         self.scores_this_round[candidate_id] = 0
     end
-    Rounds:UpdateScoresPanel()
 end
 
 function Rounds:AdjustScore(candidate, score_delta)
@@ -95,7 +101,7 @@ function Rounds:AdjustScore(candidate, score_delta)
 end
 
 function Rounds:Init()
-    print("rounds constructor called")
+    print("[xctf Rounds:Init()]" .. "rounds constructor called")
     self.game_started = false
     self.initialized = false
     
@@ -124,7 +130,7 @@ function Rounds:Init()
 end
 
 function Rounds:InitGameMode()
-    print("Rounds:InitGameMode...")
+    print("[xctf Rounds:InitGameMode()]" .. "Rounds:InitGameMode...")
     GameRules:SetUseUniversalShopMode(true)
     -- for faster entering
     GameRules:SetPreGameTime(3.0)
@@ -158,13 +164,13 @@ function Rounds:InitFromServerAndBeginGame()
         false -- canGrowCache
     )[1]:RemoveSelf()
 
-    print("fetching init data from server")
+    print("[xctf Rounds:InitFromServerAndBeginGame()]" .. "fetching init data from server")
     local req = CreateHTTPRequest("GET", Config.server_url.init)
     if req ~= nil then
         req:SetHTTPRequestHeaderValue("X-CLIENT-SECRET", Config.server_token)
         req:Send(function(result)
             local body = result["Body"]
-            print("got body: " .. body)
+            print("[xctf Rounds:InitFromServerAndBeginGame()]" .. "got body: " .. body)
 
             json_data = json.decode(body)
 
@@ -196,11 +202,11 @@ function Rounds:InitFromServerAndBeginGame()
                 self.initialized = true
                 Rounds:BeginGame()
             else
-                print("failed to fetch init data from server, aborting")
+                print("[xctf Rounds:InitFromServerAndBeginGame()]" .. "failed to fetch init data from server, aborting")
             end
         end)
     else
-        print("request failed")
+        print("[xctf Rounds:InitFromServerAndBeginGame()]" .. "request failed")
     end
 end
 
@@ -217,7 +223,7 @@ end
     we setup the bot players with fake heros first.
 ]]
 function Rounds:SetupBotPlayers()
-    print(".. debug ? " .. tostring(debug.sethook))
+    print("[xctf Rounds:SetupBotPlayers()]" .. ".. debug ? " .. tostring(debug.sethook))
     for team_id, team_name in pairs(Candidates) do
         local ob_hero = GameRules:AddBotPlayerWithEntityScript(
             "npc_dota_hero_abaddon",
@@ -232,7 +238,7 @@ function Rounds:SetupBotPlayers()
         ob_hero:SetRespawnsDisabled(true)
         local player_id = ob_hero:GetPlayerID()
         ob_hero:RemoveSelf()
-        print("adding player id " .. tostring(player_id) .. " to team " .. tostring(team_id))
+        print("[xctf Rounds:SetupBotPlayers()]" .. "adding player id " .. tostring(player_id) .. " to team " .. tostring(team_id))
         self.player_to_candidate[player_id] = team_id
         self.candidate_to_player[team_id] = player_id
     end
@@ -267,7 +273,7 @@ function Rounds:BeginGame()
 end
 
 function Rounds:NextRound(scripts)
-    print("Next Round")
+    print("[xctf Rounds:NextRound()]" .. "Next Round")
 
     if self.round_count > 0 then
         local last_scores = deepcopy(self.scores_this_round)
@@ -298,7 +304,7 @@ end
 function Rounds:ChooseHeros(chooser_scripts, attributes)
     -- TODO: add hero chooser fetch flag so that game only starts
     -- when hero is added
-    print("choosing heros")
+    print("[xctf Rounds:ChooseHeros()]" .. "choosing heros")
 
     local choices = {}
 
@@ -312,7 +318,7 @@ function Rounds:ChooseHeros(chooser_scripts, attributes)
     end
 
     team_config = table.shuffle(team_config)
-    print("team config " .. GameRules.inspect(team_config))
+    print("[xctf Rounds:ChooseHeros()]" .. "team config " .. GameRules.inspect(team_config))
 
     for i = 1, Config.team_count do
         local cur_candidates = {}
@@ -328,7 +334,7 @@ function Rounds:ChooseHeros(chooser_scripts, attributes)
             local hero_name = Sandbox:RunChooseHero(chooser)
             local player_id = self.candidate_to_player[candidate_id]
             local player_owner = PlayerResource:GetPlayer(player_id)
-            print("player owner: " .. tostring(player_owner) .. "team id " .. tostring(cur_team_id))
+            print("[xctf Rounds:ChooseHeros()]" .. "player owner: " .. tostring(player_owner) .. "team id " .. tostring(cur_team_id))
             local candidate_hero = CreateUnitByName(
                 hero_name,
                 Config.hero_locations[cur_id],
@@ -338,7 +344,7 @@ function Rounds:ChooseHeros(chooser_scripts, attributes)
                 cur_team_id
             )
 
-            print("check player and team .. " .. tostring(candidate_hero:GetPlayerID()) .. " " .. tostring(candidate_hero:GetTeam()))
+            print("[xctf Rounds:ChooseHeros()]" .. "check player and team .. " .. tostring(candidate_hero:GetPlayerID()) .. " " .. tostring(candidate_hero:GetTeam()))
 
             Rounds:InitCandidateHero(candidate_hero, attributes[candidate_id])
             self.heros[candidate_id] = candidate_hero
@@ -352,20 +358,20 @@ end
 
 function Rounds:PrepareBeginRound()
     local req = CreateHTTPRequest("GET", Config.server_url.service)
-    print("fetching data for next round")
+    print("[xctf Rounds:PrepareBeginRound()]" .. "fetching data for next round")
     req:SetHTTPRequestHeaderValue("X-CLIENT-SECRET", Config.server_token)
     if req == nil then
-        print("cannot create http request, aborting")
+        print("[xctf Rounds:PrepareBeginRound()]" .. "cannot create http request, aborting")
         return
     end
     req:Send(function(result)
         local body = result["Body"]
-        print("got body: " .. body)
+        print("[xctf Rounds:PrepareBeginRound()]" .. "got body: " .. body)
         
         json_data = json.decode(body)
         
         if json_data == nil or json_data.code ~= "AD-000000" then
-            print("failed to parse data from server as json, aborting")
+            print("[xctf Rounds:PrepareBeginRound()]" .. "failed to parse data from server as json, aborting")
             return
         end
         local data = json_data.data
@@ -489,8 +495,7 @@ function Rounds:BeginRound(bot_scripts)
             callback = function ()
                 Timers:RemoveTimer("round_periodic_timer")
                 Rounds:RoundEndedScoring()
-                Rounds:FlushRoundScores()
-                Rounds:PrepareBeginRound()
+                Rounds:FlushScoresAndRunNextRound()
             end
         }
     )
@@ -504,8 +509,7 @@ function Rounds:BeginRound(bot_scripts)
                 if #living_teams <= 1 then
                     Timers:RemoveTimer("round_limit_timer")
                     Rounds:RoundEndedScoring()
-                    Rounds:FlushRoundScores()
-                    Rounds:PrepareBeginRound()
+                    Rounds:FlushScoresAndRunNextRound()
                     return
                 else
                     return 1
