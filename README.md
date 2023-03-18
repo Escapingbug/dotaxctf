@@ -22,7 +22,7 @@ Read the source code!
 This is a Dota2 custom map, the contents here are the `vscripts` directory of the custom map.
 To setup and run the map:
 
-1. download the game (dota2), and when downloading on Steam, right click on the Dota2 -> property DLC -> check `Dota 2 Workshop Tools DLC`.
+1. download the game (dota2), and when downloading on Steam, right click on the Dota2 -> property -> DLC -> check `Dota 2 Workshop Tools DLC`.
 2. start the game and choose `Launch Dota 2 - Tools`.
 3. create a new custom map
 4. copy this repo to `dota2/game/dota_addons/[your map name]/script/vscripts`, note that this repo **is** the vscripts itself.
