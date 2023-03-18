@@ -40,3 +40,10 @@ All other information should be explored by reading the source code!
 ## Hints
 
 - [API](https://moddota.com/api/#!/vscripts)
+
+## Devs
+
+- [anciety](https://github.com/escapingbug)
+- [liangjs](https://github.com/liangjs)
+- [kdxcxs](https://github.com/kdxcxs)
+- [xljkqq](https://github.com/xljkqq)
