@@ -20,18 +20,18 @@ Have fun, instead of hacking everything, bro!
 Read the source code!
 
 This is a Dota2 custom map, the contents here are the `vscripts` directory of the custom map.
-To setup the map:
+To setup and run the map:
 
-1. download the game (dota2), and when download on Steam, right click on the Dota2 -> property there's a option called "DLC", check the `workshop tools DLC`.
-2. when start the game, choose workshop tools.
-3. create a new custom map, copy this repo to `game/dota_addons/[your map name]/script/vscripts`, not that this repo **is** the vscripts itself.
-4. when testing, after launching the tools, choose hammer.
-5. open `template_map` (under `content/dota_addons/`, there's a map called `template_map`)
-6. `F9` to build.
+1. download the game (dota2), and when downloading on Steam, right click on the Dota2 -> property DLC -> check `Dota 2 Workshop Tools DLC`.
+2. start the game and choose `Launch Dota 2 - Tools`.
+3. create a new custom map
+4. copy this repo to `dota2/game/dota_addons/[your map name]/script/vscripts`, note that this repo **is** the vscripts itself.
+5. copy [dotaxctf-content repo](https://github.com/escapingbug/dotaxctf-content) to `dota2/content/dota_addons/[your map name]`
+6. after launching the tools, choose hammer.
+7. open `template_map` dotaxctf-content repo (which is copied to `dota2/content/dota_addons/[your map name]/maps`)
+8. `F9` to build with default settings.
 
-Also, the content we are using is under [dotaxctf-content repo](https://github.com/escapingbug/dotaxctf-content), you might find that useful to stay consistent with us.
-
-When our game runes, we will be using this setting.
+When our game runs, we will be using this setting.
 The `server.py` is the example server serving example code.
 When running the game, the server will accept your scripts.
 Each round you will be able to send up the script, and it will be sent back to the client (game) the next round.
