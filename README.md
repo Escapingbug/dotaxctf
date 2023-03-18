@@ -26,9 +26,9 @@ To setup and run the map:
 2. start the game and choose `Launch Dota 2 - Tools`.
 3. create a new custom map
 4. copy this repo to `dota2/game/dota_addons/[your map name]/script/vscripts`, note that this repo **is** the vscripts itself.
-5. copy [dotaxctf-content repo](https://github.com/escapingbug/dotaxctf-content) to `dota2/content/dota_addons/[your map name]`
+5. copy [dotaxctf-contents repo](https://github.com/escapingbug/dotaxctf-contents) to `dota2/content/dota_addons/[your map name]`
 6. after launching the tools, choose hammer.
-7. open `template_map` dotaxctf-content repo (which is copied to `dota2/content/dota_addons/[your map name]/maps`)
+7. open `template_map` dotaxctf-contents repo (which is copied to `dota2/content/dota_addons/[your map name]/maps`)
 8. `F9` to build with default settings.
 
 When our game runs, we will be using this setting.
