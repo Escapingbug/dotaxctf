@@ -43,6 +43,9 @@ DOTA_UNIT_TARGET_HERO = 1
 DOTA_UNIT_TARGET_FLAG_NONE = 0
 FIND_ANY_ORDER = 0
 DOTA_UNIT_ORDER_ATTACK_TARGET = 4
+DOTA_UNIT_ORDER_TRAIN_ABILITY = 11
+DOTA_UNIT_ORDER_CAST_TARGET = 6
+DOTA_UNIT_ORDER_CAST_POSITION = 5
 
 local units = hero:FindUnitsInRadius(
     hero:GetAbsOrigin(),
@@ -52,14 +55,32 @@ local units = hero:FindUnitsInRadius(
     DOTA_UNIT_TARGET_FLAG_NONE,
     FIND_ANY_ORDER
 )
-if #units > 0 then
-    hero:ExecuteOrder(
-        DOTA_UNIT_ORDER_ATTACK_TARGET,
-        units[1].GetEntityIndex(),
-        nil,
-        nil,
-        false
-    )
-end
 
+local bloodseeker_blood_bath_ability = hero:GetAbilityByIndex(1)
+hero:ExecuteOrder(
+    DOTA_UNIT_ORDER_TRAIN_ABILITY,
+    nil,
+    bloodseeker_blood_bath_ability:GetEntityIndex(),
+    nil,
+    false
+)
+
+if #units > 0 then
+    if bloodseeker_blood_bath_ability:GetLevel() > 0 then
+        hero:ExecuteOrder(
+            DOTA_UNIT_ORDER_CAST_POSITION,
+            nil,
+            bloodseeker_blood_bath_ability:GetEntityIndex(),
+            hero:GetAbsOrigin(),
+            false
+        )
+    end
+    -- hero:ExecuteOrder(
+    --     DOTA_UNIT_ORDER_ATTACK_TARGET,
+    --     units[1].GetEntityIndex(),
+    --     nil,
+    --     nil,
+    --     false
+    -- )
+end
 return ctx

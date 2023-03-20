@@ -124,6 +124,33 @@ function Sandbox:SandboxBaseNPC(npc, readonly)
         IsConsideredHero  = copy_method(npc, "IsConsideredHero"),
     }
 
+    local order_whitelist = {
+        [DOTA_UNIT_ORDER_NONE]              = true,
+        [DOTA_UNIT_ORDER_MOVE_TO_POSITION]  = true,
+        [DOTA_UNIT_ORDER_MOVE_TO_TARGET]    = true,
+        [DOTA_UNIT_ORDER_ATTACK_MOVE]       = true,
+        [DOTA_UNIT_ORDER_ATTACK_TARGET]     = true,
+        [DOTA_UNIT_ORDER_CAST_POSITION]     = true,
+        [DOTA_UNIT_ORDER_CAST_TARGET]       = true,
+        [DOTA_UNIT_ORDER_CAST_TARGET_TREE]  = true,
+        [DOTA_UNIT_ORDER_CAST_NO_TARGET]    = true,
+        [DOTA_UNIT_ORDER_CAST_TOGGLE]       = true,
+        [DOTA_UNIT_ORDER_HOLD_POSITION]     = true,
+        [DOTA_UNIT_ORDER_TRAIN_ABILITY]     = true,
+        [DOTA_UNIT_ORDER_DROP_ITEM]         = true,
+        [DOTA_UNIT_ORDER_GIVE_ITEM]         = true,
+        [DOTA_UNIT_ORDER_PICKUP_ITEM]       = true,
+        [DOTA_UNIT_ORDER_PURCHASE_ITEM]     = true,
+        [DOTA_UNIT_ORDER_SELL_ITEM]         = true,
+        [DOTA_UNIT_ORDER_MOVE_ITEM]         = true,
+        [DOTA_UNIT_ORDER_CAST_TOGGLE_AUTO]  = true,
+        [DOTA_UNIT_ORDER_STOP]              = true,
+        [DOTA_UNIT_ORDER_MOVE_TO_DIRECTION] = true,
+        [DOTA_UNIT_ORDER_PATROL]            = true,
+        [DOTA_UNIT_ORDER_CONTINUE]          = true,
+        [DOTA_UNIT_ORDER_MOVE_RELATIVE]     = true,
+    }
+
     function sandboxed:FindUnitsInRadius(
         location,
         radius,
@@ -167,6 +194,9 @@ function Sandbox:SandboxBaseNPC(npc, readonly)
         position,
         queue
     )
+        if not order_whitelist[order_type] then
+            return
+        end
         ExecuteOrderFromTable{
             UnitIndex = self:GetEntityIndex(),
             OrderType = order_type,
@@ -238,6 +268,8 @@ function Sandbox:SandboxAbility(ability)
         GetToggleState            = copy_method(ability, "GetToggleState"),
         GetDuration               = copy_method(ability, "GetDuration"),
         IsItem                    = copy_method(ability, "IsItem"),
+
+        GetEntityIndex            = copy_method(ability, "GetEntityIndex"),
     }
 
     return sandboxed
