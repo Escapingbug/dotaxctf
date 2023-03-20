@@ -2,6 +2,7 @@
 require("config")
 require("sandbox")
 require("rounds")
+require("commands")
 
 if CAddonTemplateGameMode == nil then
 	CAddonTemplateGameMode = class({})

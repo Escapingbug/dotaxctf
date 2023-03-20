@@ -117,6 +117,9 @@ function Rounds:Init()
 
     -- rest order => candidate id
     self.candidate_rest_order = {}
+
+    -- to support `x fr` command
+    self.restarting = false
     
     self.history = {
         scores = {},
@@ -142,12 +145,12 @@ function Rounds:InitGameMode()
 end
 
 function Rounds:InitFromServerAndBeginGame()
-    if self.initialized then
+    if self.initialized and not self.restarting then
         return
     end
 
     -- remove the host hero
-    FindUnitsInRadius(
+    local host_hero = FindUnitsInRadius(
         DOTA_TEAM_FIRST,
         Vector(0, 0),
         nil, -- cacheUnit
@@ -157,7 +160,10 @@ function Rounds:InitFromServerAndBeginGame()
         DOTA_UNIT_TARGET_FLAG_PLAYER_CONTROLLED,
         FIND_ANY_ORDER,
         false -- canGrowCache
-    )[1]:RemoveSelf()
+    )[1]
+    if host_hero ~= nil then -- host_hero == nil when the game is restarted by console command
+        host_hero:RemoveSelf()
+    end
 
     print("[xctf Rounds:InitFromServerAndBeginGame()]" .. "fetching init data from server")
     local req = CreateHTTPRequest("GET", Config.server_url.init)
@@ -249,6 +255,11 @@ function Rounds:SetupLastHitListener()
 end
 
 function Rounds:BeginGame()
+    if self.restarting then
+        Rounds:PrepareBeginRound()
+        self.restarting = false
+        return
+    end
     if not self.game_started then
         -- TODO: use add bot player with entity script to add
         -- player so that we can listen to last hit to add
