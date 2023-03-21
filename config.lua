@@ -32,11 +32,6 @@ function Config:Init()
     -- and action
     self.round_begin_delay = 3
 
-    self.shop = {
-        location = Vector(0, 0),
-        radius = 1e6,
-    }
-
 end
 
 if not Config.config_inited then Config:Init() end
