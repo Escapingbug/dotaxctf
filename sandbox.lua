@@ -95,6 +95,8 @@ function Sandbox:SandboxHero(hero, readonly)
     sandboxed.GetStrength   = copy_method(hero, "GetStrength")
     sandboxed.GetGold       = copy_method(hero, "GetGold")
 
+    sandboxed.candidate_id  = hero.candidate_id
+
     -- TODO: level up
 
     return sandboxed
