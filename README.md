@@ -47,3 +47,7 @@ All other information should be explored by reading the source code!
 - [liangjs](https://github.com/liangjs)
 - [kdxcxs](https://github.com/kdxcxs)
 - [xljkqq](https://github.com/xljkqq)
+
+## Changelog
+
+- [2023/3/21 21:13] fix: remove shop and spawn heros as a circle.([#20](https://github.com/Escapingbug/dotaxctf/pull/20))

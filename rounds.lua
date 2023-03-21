@@ -7,8 +7,6 @@ require("lib/base64")
 require("lib/json")
 
 AVAILABLE_TEAMS = {
-    DOTA_TEAM_GOODGUYS,
-    DOTA_TEAM_BADGUYS,
     DOTA_TEAM_CUSTOM_1,
     DOTA_TEAM_CUSTOM_2,
     DOTA_TEAM_CUSTOM_3,
@@ -270,8 +268,6 @@ function Rounds:BeginGame()
         Rounds:SetupBotPlayers()
         Rounds:SetupLastHitListener()
 
-        Rounds:SetupShop()
-
         Rounds:PrepareBeginRound()
         self.game_started = true
         -- all next rounds should be called on timer set by next round
@@ -326,6 +322,15 @@ function Rounds:ChooseHeros(chooser_scripts, attributes)
     team_config = table.shuffle(team_config)
     print("[xctf Rounds:ChooseHeros()]" .. "team config " .. GameRules.inspect(team_config))
 
+    local hero_locations = {}
+    for i = 1, Config.candidate_count do
+        hero_locations[i] = Vector(
+            math.cos(2 * math.pi * i / Config.candidate_count) * Config.hero_locations_radius,
+            math.sin(2 * math.pi * i / Config.candidate_count) * Config.hero_locations_radius
+        )
+    end
+
+    local cur_id = 1
     for i = 1, Config.team_count do
         local cur_candidates = {}
         for _ = 1, Config.candidates_per_team do
@@ -334,7 +339,6 @@ function Rounds:ChooseHeros(chooser_scripts, attributes)
 
         local cur_team_id = AVAILABLE_TEAMS[i]
 
-        local cur_id = 1
         for _, candidate_id in ipairs(cur_candidates) do
             local chooser = Sandbox:LoadChooseHeroScript(chooser_scripts[candidate_id])
             local hero_name = Sandbox:RunChooseHero(chooser)
@@ -343,7 +347,7 @@ function Rounds:ChooseHeros(chooser_scripts, attributes)
             print("[xctf Rounds:ChooseHeros()]" .. "player owner: " .. tostring(player_owner) .. "team id " .. tostring(cur_team_id))
             local candidate_hero = CreateUnitByName(
                 hero_name,
-                Config.hero_locations[cur_id],
+                hero_locations[cur_id],
                 true, -- findClearSpace
                 nil, -- npcowner
                 player_owner, -- entity owner
@@ -406,7 +410,7 @@ function Rounds:PrepareBeginRound()
             attributes = attributes,
         }
         -- if total_rounds_count is odd, candidates will rest in turns
-        if Config.candidate_count % 2 ~= 0 then
+        if Config.candidate_count > 8 and Config.candidate_count % 2 ~= 0 then
             RestTeamId = self.candidate_rest_order[(self.round_count - 1) % Config.candidate_count + 1]
         end
         Rounds:NextRound(scripts)
@@ -534,16 +538,6 @@ function Rounds:BeginRound(bot_scripts)
             BotScriptEnv:AttachScriptOnUnit(hero, script)
         end
     end
-end
-
-function Rounds:SetupShop()
-    local location = Config.shop.location
-    local shop = CreateUnitByName("dota_fountain", location, true, nil, nil, DOTA_TEAM_NEUTRALS)
-    shop:SetCanSellItems(true)
-    shop:SetIdleAcquire(false)
-    -- shop:SetShopType(DOTA_SHOP_HOME) -- not a shop
-    local trigger = SpawnDOTAShopTriggerRadiusApproximate(shop:GetAbsOrigin(), Config.shop.radius)
-    trigger:SetShopType(DOTA_SHOP_HOME)
 end
 
 if not Rounds.heros then Rounds:Init() end
