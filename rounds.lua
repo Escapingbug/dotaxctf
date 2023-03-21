@@ -326,6 +326,7 @@ function Rounds:ChooseHeros(chooser_scripts, attributes)
     team_config = table.shuffle(team_config)
     print("[xctf Rounds:ChooseHeros()]" .. "team config " .. GameRules.inspect(team_config))
 
+    local cur_id = 1
     for i = 1, Config.team_count do
         local cur_candidates = {}
         for _ = 1, Config.candidates_per_team do
@@ -334,7 +335,6 @@ function Rounds:ChooseHeros(chooser_scripts, attributes)
 
         local cur_team_id = AVAILABLE_TEAMS[i]
 
-        local cur_id = 1
         for _, candidate_id in ipairs(cur_candidates) do
             local chooser = Sandbox:LoadChooseHeroScript(chooser_scripts[candidate_id])
             local hero_name = Sandbox:RunChooseHero(chooser)
