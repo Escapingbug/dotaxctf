@@ -412,7 +412,7 @@ function Rounds:PrepareBeginRound()
             attributes = attributes,
         }
         -- if total_rounds_count is odd, candidates will rest in turns
-        if Config.candidate_count % 2 ~= 0 then
+        if Config.candidate_count > 8 and Config.candidate_count % 2 ~= 0 then
             RestTeamId = self.candidate_rest_order[(self.round_count - 1) % Config.candidate_count + 1]
         end
         Rounds:NextRound(scripts)
