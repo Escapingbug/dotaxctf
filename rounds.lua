@@ -356,6 +356,7 @@ function Rounds:ChooseHeros(chooser_scripts, attributes)
 
             print("[xctf Rounds:ChooseHeros()]" .. "check player and team .. " .. tostring(candidate_hero:GetPlayerID()) .. " " .. tostring(candidate_hero:GetTeam()))
 
+            candidate_hero.candidate_id = candidate_id
             Rounds:InitCandidateHero(candidate_hero, attributes[candidate_id])
             self.heros[candidate_id] = candidate_hero
             choices[candidate_id] = hero_name

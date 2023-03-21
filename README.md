@@ -51,3 +51,4 @@ All other information should be explored by reading the source code!
 ## Changelog
 
 - [2023/3/21 21:13] fix: remove shop and spawn heros as a circle.([#20](https://github.com/Escapingbug/dotaxctf/pull/20))
+- [2023/3/21 22:00] feat: support getting hero's candidate id.([#21](https://github.com/Escapingbug/dotaxctf/pull/21))
