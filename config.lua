@@ -20,13 +20,9 @@ function Config:Init()
     self.candidates_per_team = 0
     
     self.round_time = 5 * 60
-    self.hero_locations = {}
+    self.hero_locations_radius = 600
 
     self.total_rounds_count = 60 -- 5 hours in total, 5 minutes per round
-    
-    for i = 0, 15 do
-        self.hero_locations[i + 1] = Vector((i % 4) * 200 - 400, math.floor(i / 4) * 200 - 400)
-    end
 
     -- how many seconds to wait after choosing hero
     -- and action

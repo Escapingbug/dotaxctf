@@ -324,6 +324,14 @@ function Rounds:ChooseHeros(chooser_scripts, attributes)
     team_config = table.shuffle(team_config)
     print("[xctf Rounds:ChooseHeros()]" .. "team config " .. GameRules.inspect(team_config))
 
+    local hero_locations = {}
+    for i = 1, Config.candidate_count do
+        hero_locations[i] = Vector(
+            math.cos(2 * math.pi * i / Config.candidate_count) * Config.hero_locations_radius,
+            math.sin(2 * math.pi * i / Config.candidate_count) * Config.hero_locations_radius
+        )
+    end
+
     local cur_id = 1
     for i = 1, Config.team_count do
         local cur_candidates = {}
@@ -341,7 +349,7 @@ function Rounds:ChooseHeros(chooser_scripts, attributes)
             print("[xctf Rounds:ChooseHeros()]" .. "player owner: " .. tostring(player_owner) .. "team id " .. tostring(cur_team_id))
             local candidate_hero = CreateUnitByName(
                 hero_name,
-                Config.hero_locations[cur_id],
+                hero_locations[cur_id],
                 true, -- findClearSpace
                 nil, -- npcowner
                 player_owner, -- entity owner
