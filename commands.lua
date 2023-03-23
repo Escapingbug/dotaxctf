@@ -29,7 +29,6 @@ end
 function Commands:FullRestart()
     Timers:RemoveTimer("round_periodic_timer")
     Timers:RemoveTimer("round_limit_timer")
-    Rounds:CleanupLivingHeros()
     Rounds.restarting = true
     Rounds:InitFromServerAndBeginGame()
 end

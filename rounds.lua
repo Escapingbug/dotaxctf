@@ -209,12 +209,28 @@ function Rounds:InitFromServerAndBeginGame()
     end
 end
 
-function Rounds:CleanupLivingHeros()
+function Rounds:CleanupLivingHerosAndClearUnits()
     for _, hero in pairs(self.heros) do
         hero:RemoveSelf()
     end
-
     self.heros = {}
+
+    for _, team in pairs(AVAILABLE_TEAMS) do
+        local team_units = FindUnitsInRadius(
+            team,
+            Vector(0, 0),
+            nil, -- cacheUnit
+            1e6,
+            DOTA_UNIT_TARGET_TEAM_BOTH,
+            DOTA_UNIT_TARGET_ALL,
+            DOTA_UNIT_TARGET_FLAG_NONE,
+            FIND_ANY_ORDER,
+            false -- canGrowCache
+        )
+        for _, unit in pairs(team_units) do
+            unit:RemoveSelf()
+        end
+    end
 end
 
 --[[
@@ -282,7 +298,7 @@ function Rounds:NextRound(scripts)
         table.insert(self.history.scores, last_scores)
     end
 
-    Rounds:CleanupLivingHeros()
+    Rounds:CleanupLivingHerosAndClearUnits()
     Rounds:ChooseHeros(scripts["chooser_scripts"], scripts["attributes"])
     Timers:CreateTimer(
         Config.round_begin_delay,
