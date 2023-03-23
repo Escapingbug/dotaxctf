@@ -185,6 +185,11 @@ function Sandbox:SandboxBaseNPC(npc, readonly)
         return Sandbox:SandboxAbility(ability)
     end
 
+    function sandboxed:GetItemInSlot(slot)
+        local item = npc:GetItemInSlot(slot)
+        return Sandbox:SandboxItem(item)
+    end
+
     if readonly then
         return sandboxed
     end
@@ -274,6 +279,49 @@ function Sandbox:SandboxAbility(ability)
         GetEntityIndex            = copy_method(ability, "GetEntityIndex"),
     }
 
+    return sandboxed
+end
+
+function Sandbox:SandboxItem(item)
+    if item == nil then
+        return nil
+    end
+
+    local sandboxed = {
+        CanBeUsedOutOfInventory = copy_method(item, "CanBeUsedOutOfInventory"),
+        CanOnlyPlayerHeroPickup = copy_method(item, "CanOnlyPlayerHeroPickup"),
+
+        GetCost = copy_method(item, "GetCost"),
+        GetCurrentCharges = copy_method(item, "GetCurrentCharges"),
+        GetInitialCharges = copy_method(item, "GetInitialCharges"),
+        GetItemSlot = copy_method(item, "GetItemSlot"),
+        GetItemState = copy_method(item, "GetItemState"),
+        GetPurchaseTime = copy_method(item, "GetPurchaseTime"),
+        GetSecondaryCharges = copy_method(item, "GetSecondaryCharges"),
+        GetValuelessCharges = copy_method(item, "GetValuelessCharges"),
+
+        IsAlertableItem = copy_method(item, "IsAlertableItem"),
+        IsCastOnPickup = copy_method(item, "IsCastOnPickup"),
+        IsCombinable = copy_method(item, "IsCombinable"),
+        IsCombineLocked = copy_method(item, "IsCombineLocked"),
+        IsDisassemblable = copy_method(item, "IsDisassemblable"),
+        IsDroppable = copy_method(item, "IsDroppable"),
+        IsInBackpack = copy_method(item, "IsInBackpack"),
+        IsItem = copy_method(item, "IsItem"),
+        IsKillable = copy_method(item, "IsKillable"),
+        IsMuted = copy_method(item, "IsMuted"),
+        IsNeutralDrop = copy_method(item, "IsNeutralDrop"),
+        IsPermanent = copy_method(item, "IsPermanent"),
+        IsPurchasable = copy_method(item, "IsPurchasable"),
+        IsRecipe = copy_method(item, "IsRecipe"),
+        IsRecipeGenerated = copy_method(item, "IsRecipeGenerated"),
+        IsSellable = copy_method(item, "IsSellable"),
+        IsStackable = copy_method(item, "IsStackable"),
+
+        GetName = copy_method(item, "GetAbilityName"), -- CDOTA_Item extends CDOTABaseAbility
+
+        GetEntityIndex = copy_method(item, "GetEntityIndex"),
+    }
     return sandboxed
 end
 
