@@ -223,7 +223,7 @@ function Rounds:CleanupLivingHerosAndClearUnits()
             1e6,
             DOTA_UNIT_TARGET_TEAM_BOTH,
             DOTA_UNIT_TARGET_ALL,
-            DOTA_UNIT_TARGET_FLAG_PLAYER_CONTROLLED,
+            DOTA_UNIT_TARGET_FLAG_NONE,
             FIND_ANY_ORDER,
             false -- canGrowCache
         )
