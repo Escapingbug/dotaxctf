@@ -53,4 +53,4 @@ All other information should be explored by reading the source code!
 - [2023/3/21 21:13] fix: remove shop and spawn heros as a circle.([#20](https://github.com/Escapingbug/dotaxctf/pull/20))
 - [2023/3/21 22:00] feat: support getting hero's candidate id.([#21](https://github.com/Escapingbug/dotaxctf/pull/21))
 - [2023/3/23 13:30] fix: remove non-hero units after round ends.([#23](https://github.com/Escapingbug/dotaxctf/pull/23), reporter: AAA剑圣)
-- [2023/3/24 00:22] feat: support `GetItemInSlot(slot)` to return a sandboxed item.([#24](https://github.com/Escapingbug/dotaxctf/pull/24))
+- [2023/3/24 00:22] feat: support `GetItemInSlot(slot)` to return a sandboxed item.([#24](https://github.com/Escapingbug/dotaxctf/pull/24), reporter: AAA剑圣)
