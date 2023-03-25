@@ -124,6 +124,7 @@ function Sandbox:SandboxBaseNPC(npc, readonly)
         GetAbilityCount   = copy_method(npc, "GetAbilityCount"),
         IsAttacking       = copy_method(npc, "IsAttacking"),
         IsConsideredHero  = copy_method(npc, "IsConsideredHero"),
+        SpendMana         = copy_method(npc, "SpendMana"),
     }
 
     local order_whitelist = {
@@ -321,6 +322,7 @@ function Sandbox:SandboxItem(item)
         GetName = copy_method(item, "GetAbilityName"), -- CDOTA_Item extends CDOTABaseAbility
 
         GetEntityIndex = copy_method(item, "GetEntityIndex"),
+        SpendCharge = copy_method(item, "SpendCharge")
     }
     return sandboxed
 end
