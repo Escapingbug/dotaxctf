@@ -74,10 +74,15 @@ function Sandbox:RunAction(act_func, entity, ctx)
     return new_ctx
 end
 
+function GetGameTime()
+    return GameRules:GetGameTime()
+end
+
 function Sandbox:SandboxPublicAPI()
     local api = {
         Vector = Vector,
         QAngle = QAngle,
+        GetGameTime = GetGameTime,
         print = print, -- TODO: remove this
     }
     return api
@@ -261,7 +266,7 @@ function Sandbox:SandboxAbility(ability)
         GetAOERadius              = copy_method(ability, "GetAOERadius"),
         GetBehavior               = copy_method(ability, "GetBehavior"),
         GetChannelledManaCostPerSecond
-                                  = copy_method(ability, "GetChannelledManaCostPerSecond"),
+                                       = copy_method(ability, "GetChannelledManaCostPerSecond"),
         GetChannelTime            = copy_method(ability, "GetChannelTime"),
         GetCooldownTimeRemaining  = copy_method(ability, "GetCooldownTimeRemaining"),
         GetCurrentAbilityCharges  = copy_method(ability, "GetCurrentAbilityCharges"),
@@ -269,7 +274,7 @@ function Sandbox:SandboxAbility(ability)
         GetEffectiveCooldown      = copy_method(ability, "GetEffectiveCooldown"),
         GetLevel                  = copy_method(ability, "GetLevel"),
         GetLevelSpecialValueNoOverride
-                                  = copy_method(ability, "GetLevelSpecialValueNoOverride"),
+                                       = copy_method(ability, "GetLevelSpecialValueNoOverride"),
         GetManaCost               = copy_method(ability, "GetManaCost"),
         GetSpecialValueFor        = copy_method(ability, "GetSpecialValueFor"),
         GetToggleState            = copy_method(ability, "GetToggleState"),
