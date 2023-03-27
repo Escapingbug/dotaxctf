@@ -29,6 +29,7 @@ end
 function Commands:FullRestart()
     Timers:RemoveTimer("round_periodic_timer")
     Timers:RemoveTimer("round_limit_timer")
+    Sandbox:CleanUpItems()
     Rounds.restarting = true
     Rounds:InitFromServerAndBeginGame()
 end
@@ -36,6 +37,7 @@ end
 function Commands:RoundRestart()
     Timers:RemoveTimer("round_periodic_timer")
     Timers:RemoveTimer("round_limit_timer")
+    Sandbox:CleanUpItems()
     Rounds:PrepareBeginRound()
 end
 

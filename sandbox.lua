@@ -15,6 +15,7 @@ function Sandbox:Init()
     self.public_api = self:SandboxPublicAPI()
     self.default_hero = "npc_dota_hero_axe"
     self.init = true
+    self.items = {}
 end
 
 function Sandbox:SetupGameInfo(game_info)
@@ -235,6 +236,7 @@ function Sandbox:SandboxBaseNPC(npc, readonly)
         -- we only use unreliable gold
         npc:SetGold(gold_left, false)
         npc:AddItem(item)
+        table.insert(Sandbox.items, item)
         return true
     end
 
@@ -323,6 +325,18 @@ function Sandbox:SandboxItem(item)
         GetEntityIndex = copy_method(item, "GetEntityIndex"),
     }
     return sandboxed
+end
+
+function Sandbox:CleanUpItems()
+    for _, item in ipairs(self.items) do
+        item:RemoveSelf()
+    end
+    self.items = {}
+
+    local total = GameRules:NumDroppedItems()
+    for _ = 1, total do
+        GameRules:GetDroppedItem(0):RemoveSelf()
+    end
 end
 
 if not Sandbox.init then Sandbox:Init() end

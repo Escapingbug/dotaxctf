@@ -526,6 +526,7 @@ function Rounds:BeginRound(bot_scripts)
                 Timers:RemoveTimer("round_periodic_timer")
                 Rounds:RoundEndedScoring()
                 Rounds:FlushScoresAndRunNextRound()
+                Sandbox:CleanUpItems()
             end
         }
     )
@@ -540,6 +541,7 @@ function Rounds:BeginRound(bot_scripts)
                     Timers:RemoveTimer("round_limit_timer")
                     Rounds:RoundEndedScoring()
                     Rounds:FlushScoresAndRunNextRound()
+                    Sandbox:CleanUpItems()
                     return
                 else
                     return 1
