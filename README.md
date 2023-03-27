@@ -1,5 +1,14 @@
 # Dota X CTF Game
 
+## Note
+
+The restricted API set **is expected**.
+The game bots are not expected to be fully controllable like a normal Dota game.
+It's better focusing on using the existing features.
+Most of the lacking APIs are design choices intended.
+Feel free to report missing features, but we are not trying to guarantee a complete control environment.
+One may see that as part of the game rule itself.
+
 ## Rules
 
 Rules you should follow:
