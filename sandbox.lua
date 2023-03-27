@@ -167,7 +167,7 @@ function Sandbox:SandboxBaseNPC(npc, readonly)
         find_order
     )
         local units = FindUnitsInRadius(
-            self:GetTeam(),
+            npc:GetTeam(),
             location,
             nil, -- cacheUnit
             radius,
@@ -210,7 +210,7 @@ function Sandbox:SandboxBaseNPC(npc, readonly)
             return
         end
         ExecuteOrderFromTable{
-            UnitIndex = self:GetEntityIndex(),
+            UnitIndex = npc:GetEntityIndex(),
             OrderType = order_type,
             TargetIndex = target_index,
             AbilityIndex = ability_index,
