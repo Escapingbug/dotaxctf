@@ -123,6 +123,9 @@ function Rounds:Init()
         scores = {},
         choices = {},
     }
+
+    self.default_hero = "npc_dota_hero_bloodseeker"
+    self.default_action = "return {}"
 end
 
 function Rounds:InitGameMode()
@@ -299,7 +302,7 @@ function Rounds:NextRound(scripts)
     end
 
     Rounds:CleanupLivingHerosAndClearUnits()
-    Rounds:ChooseHeros(scripts["chooser_scripts"], scripts["attributes"])
+    Rounds:ChooseHeros(scripts["chooser_scripts"], scripts["attributes"], scripts["bot_scripts"])
     Timers:CreateTimer(
         Config.round_begin_delay,
         function ()
@@ -319,7 +322,7 @@ function Rounds:InitCandidateHero(hero, attr)
     hero:ModifyAgility(attr.agility or 0)
 end
 
-function Rounds:ChooseHeros(chooser_scripts, attributes)
+function Rounds:ChooseHeros(chooser_scripts, attributes, bot_scripts)
     -- TODO: add hero chooser fetch flag so that game only starts
     -- when hero is added
     print("[xctf Rounds:ChooseHeros()]" .. "choosing heros")
@@ -360,7 +363,15 @@ function Rounds:ChooseHeros(chooser_scripts, attributes)
             local hero_name = Sandbox:RunChooseHero(chooser)
             local player_id = self.candidate_to_player[candidate_id]
             local player_owner = PlayerResource:GetPlayer(player_id)
+            
+            -- ban non-hero unit
+            if string.sub(hero_name, 1, 14) ~= "npc_dota_hero_" then
+                print("[xctf Rounds:ChooseHeros()]" .. "found non-hero unit, using default hero instead")
+                hero_name = self.default_hero
+                bot_scripts[candidate_id] = self.default_action
+            end
             print("[xctf Rounds:ChooseHeros()]" .. "player owner: " .. tostring(player_owner) .. "team id " .. tostring(cur_team_id))
+
             local candidate_hero = CreateUnitByName(
                 hero_name,
                 hero_locations[cur_id],

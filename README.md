@@ -65,3 +65,4 @@ All other information should be explored by reading the source code!
 - [2023/3/24 00:22] feat: support `GetItemInSlot(slot)` to return a sandboxed item.([#24](https://github.com/Escapingbug/dotaxctf/pull/24), reporter: AAA剑圣)
 - [2023/3/27 00:22] feat: support getting game time by `GetGameTime()`.([#28](https://github.com/Escapingbug/dotaxctf/pull/28), reporter: Syclover)
 - [2023/3/27 23:53] fix: use `npc:GetEntityIndex()` and `npc:GetTeam()` to avoid unexpect behaviors.([#27](https://github.com/Escapingbug/dotaxctf/pull/27), reporter: 114@x1ct34m)
+- [2023/3/28 09:11] fix: ban nonhero units for hero choosing.([#31](https://github.com/Escapingbug/dotaxctf/pull/31))
