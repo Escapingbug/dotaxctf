@@ -55,6 +55,12 @@ end
 ]]
 function Rounds:FlushScoresAndRunNextRound()
     print("[xctf Rounds:FlushRoundScores]" .. "Flushing round scores")
+    
+    if self.round_count > 0 then
+        local last_scores = deepcopy(self.scores_this_round)
+        table.insert(self.history.scores, last_scores)
+    end
+
     local req = CreateHTTPRequest("POST", Config.server_url.service)
     if req == nil then
         print("[xctf Rounds:FlushRoundScores]" .. "Failed to create http request")
@@ -295,11 +301,6 @@ end
 
 function Rounds:NextRound(scripts)
     print("[xctf Rounds:NextRound()]" .. "Next Round")
-
-    if self.round_count > 0 then
-        local last_scores = deepcopy(self.scores_this_round)
-        table.insert(self.history.scores, last_scores)
-    end
 
     Rounds:CleanupLivingHerosAndClearUnits()
     Rounds:ChooseHeros(scripts["chooser_scripts"], scripts["attributes"], scripts["bot_scripts"])
