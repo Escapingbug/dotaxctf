@@ -219,9 +219,13 @@ function Rounds:InitFromServerAndBeginGame()
 end
 
 function Rounds:CleanupLivingHerosAndClearUnits()
-    for _, hero in pairs(self.heros) do
-        hero:RemoveSelf()
+    local entities = Entities:FindAllInSphere(Vector(0, 0), 1e6)
+    for _, entity in ipairs(entities) do
+        if entity:GetName() ~= "" then
+            entity:RemoveSelf()
+        end
     end
+
     self.heros = {}
 
     for _, team in pairs(AVAILABLE_TEAMS) do
