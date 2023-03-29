@@ -70,3 +70,4 @@ All other information should be explored by reading the source code!
 - [2023/3/29 08:46] fix: place history.scores updates to correct loc.([#32](https://github.com/Escapingbug/dotaxctf/pull/32), reporter: AAA剑圣)
 - [2023/3/29 11:18] feat: print with `[Sandbox.candidate_name]` banner to support checking specified hero's log.([#33](https://github.com/Escapingbug/dotaxctf/pull/33))
 - [2023/3/29 15:26] feat: print with `[Sandbox.candidate_name.script]` banner when script got an error.([#35](https://github.com/Escapingbug/dotaxctf/pull/35))
+- [2023/3/29 21:44] feat: remove all nonempty entities after round ends.([#36](https://github.com/Escapingbug/dotaxctf/pull/36))
