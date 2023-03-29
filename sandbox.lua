@@ -22,9 +22,12 @@ function Sandbox:SetupGameInfo(game_info)
     self.game_info = game_info
 end
 
-function Sandbox:LoadScript(user_script, quota, env)
+function Sandbox:LoadScript(user_script, quota, env, candidate_name)
     for k, v in pairs(self.public_api) do
         env[k] = v
+    end
+    env["print"] = function (...)
+        return print("[Sandbox.".. candidate_name .."]", ...)
     end
     for k, v in pairs(self.game_info) do
         env[k] = v
@@ -53,12 +56,12 @@ function Sandbox:RunFunctionWrap(func, ...)
     return results[2]
 end
 
-function Sandbox:LoadChooseHeroScript(user_script)
-    return self:LoadScript(user_script, 100000, {})
+function Sandbox:LoadChooseHeroScript(user_script, candidate_name)
+    return self:LoadScript(user_script, 100000, {}, candidate_name)
 end
 
-function Sandbox:LoadActionScript(user_script)
-    return self:LoadScript(user_script, 500000, {})
+function Sandbox:LoadActionScript(user_script, candidate_name)
+    return self:LoadScript(user_script, 500000, {}, candidate_name)
 end
 
 function Sandbox:RunChooseHero(choose_func)
@@ -84,7 +87,6 @@ function Sandbox:SandboxPublicAPI()
         Vector = Vector,
         QAngle = QAngle,
         GetGameTime = GetGameTime,
-        print = print, -- TODO: remove this
     }
     return api
 end
