@@ -68,3 +68,4 @@ All other information should be explored by reading the source code!
 - [2023/3/28 09:11] fix: ban nonhero units for hero choosing.([#31](https://github.com/Escapingbug/dotaxctf/pull/31),reporter: 114@x1ct34m)
 - [2023/3/28 09:16] feat: clean up items when round ends.([#30](https://github.com/Escapingbug/dotaxctf/pull/30))
 - [2023/3/29 08:46] fix: place history.scores updates to correct loc.([#32](https://github.com/Escapingbug/dotaxctf/pull/32), reporter: AAA剑圣)
+- [2023/3/29 11:18] feat: print with [Sandbox.candidate_name] banner to support checking specified hero's log.([#33](https://github.com/Escapingbug/dotaxctf/pull/33))
