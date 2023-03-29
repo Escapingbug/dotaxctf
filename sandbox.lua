@@ -44,13 +44,13 @@ function Sandbox:LoadScript(user_script, quota, env, candidate_name)
     return results[2]
 end
 
-function Sandbox:RunFunctionWrap(func, ...)
+function Sandbox:RunFunctionWrap(func, candidate_name, ...)
     if not func then
         return nil
     end
     local results = {pcall(func, ...)}
     if not results[1] then
-        print("run script error: " .. results[2])
+        print("[Sandbox.".. candidate_name ..".script]", results[2])
         return nil
     end
     return results[2]
@@ -64,17 +64,17 @@ function Sandbox:LoadActionScript(user_script, candidate_name)
     return self:LoadScript(user_script, 500000, {}, candidate_name)
 end
 
-function Sandbox:RunChooseHero(choose_func)
-    local hero_name = self:RunFunctionWrap(choose_func)
+function Sandbox:RunChooseHero(choose_func, candidate_name)
+    local hero_name = self:RunFunctionWrap(choose_func, candidate_name)
     if type(hero_name) ~= "string" then
         hero_name = self.default_hero
     end
     return hero_name
 end
 
-function Sandbox:RunAction(act_func, entity, ctx)
+function Sandbox:RunAction(act_func, entity, ctx, candidate_name)
     local sandboxed_entity = self:SandboxHero(entity, false)
-    local new_ctx = self:RunFunctionWrap(act_func, sandboxed_entity, ctx)
+    local new_ctx = self:RunFunctionWrap(act_func, candidate_name, sandboxed_entity, ctx)
     return new_ctx
 end
 

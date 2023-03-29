@@ -361,7 +361,7 @@ function Rounds:ChooseHeros(chooser_scripts, attributes, bot_scripts)
 
         for _, candidate_id in ipairs(cur_candidates) do
             local chooser = Sandbox:LoadChooseHeroScript(chooser_scripts[candidate_id], Candidates[candidate_id])
-            local hero_name = Sandbox:RunChooseHero(chooser)
+            local hero_name = Sandbox:RunChooseHero(chooser, Candidates[candidate_id])
             local player_id = self.candidate_to_player[candidate_id]
             local player_owner = PlayerResource:GetPlayer(player_id)
             
