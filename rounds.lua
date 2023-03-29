@@ -360,7 +360,7 @@ function Rounds:ChooseHeros(chooser_scripts, attributes, bot_scripts)
         local cur_team_id = AVAILABLE_TEAMS[i]
 
         for _, candidate_id in ipairs(cur_candidates) do
-            local chooser = Sandbox:LoadChooseHeroScript(chooser_scripts[candidate_id])
+            local chooser = Sandbox:LoadChooseHeroScript(chooser_scripts[candidate_id], Candidates[candidate_id])
             local hero_name = Sandbox:RunChooseHero(chooser)
             local player_id = self.candidate_to_player[candidate_id]
             local player_owner = PlayerResource:GetPlayer(player_id)
@@ -562,11 +562,11 @@ function Rounds:BeginRound(bot_scripts)
         }
     )
 
-    for candidate_num, _ in pairs(Candidates) do
+    for candidate_num, candidate_name in pairs(Candidates) do
         local hero = self.heros[candidate_num]
         if hero then
             local script = bot_scripts[candidate_num]
-            BotScriptEnv:AttachScriptOnUnit(hero, script)
+            BotScriptEnv:AttachScriptOnUnit(hero, script, candidate_name)
         end
     end
 end
