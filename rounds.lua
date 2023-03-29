@@ -50,6 +50,16 @@ function Rounds:UpdateScoresPanel()
     )
 end
 
+function Rounds:UpdateRoundEndPanel()
+    local event = {
+        round_count = self.round_count
+    }
+    CustomGameEventManager:Send_ServerToAllClients(
+        "roundEnd",
+        event
+    )
+end
+
 --[[
     Send scores to server and reset to 0
 ]]
@@ -541,6 +551,7 @@ function Rounds:BeginRound(bot_scripts)
             callback = function ()
                 Timers:RemoveTimer("round_periodic_timer")
                 Rounds:RoundEndedScoring()
+                Rounds:UpdateRoundEndPanel()
                 Rounds:FlushScoresAndRunNextRound()
                 Sandbox:CleanUpItems()
             end
@@ -556,6 +567,7 @@ function Rounds:BeginRound(bot_scripts)
                 if #living_teams <= 1 then
                     Timers:RemoveTimer("round_limit_timer")
                     Rounds:RoundEndedScoring()
+                    Rounds:UpdateRoundEndPanel()
                     Rounds:FlushScoresAndRunNextRound()
                     Sandbox:CleanUpItems()
                     return
