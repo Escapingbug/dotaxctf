@@ -67,3 +67,4 @@ All other information should be explored by reading the source code!
 - [2023/3/27 23:53] fix: use `npc:GetEntityIndex()` and `npc:GetTeam()` to avoid unexpect behaviors.([#27](https://github.com/Escapingbug/dotaxctf/pull/27), reporter: 114@x1ct34m)
 - [2023/3/28 09:11] fix: ban nonhero units for hero choosing.([#31](https://github.com/Escapingbug/dotaxctf/pull/31),reporter: 114@x1ct34m)
 - [2023/3/28 09:16] feat: clean up items when round ends.([#30](https://github.com/Escapingbug/dotaxctf/pull/30))
+- [2023/3/29 08:46] fix: place history.scores updates to correct loc.([#32](https://github.com/Escapingbug/dotaxctf/pull/32), reporter: AAA剑圣)
