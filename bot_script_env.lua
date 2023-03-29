@@ -7,10 +7,11 @@ function BotScript:Init(script_content, candidate_name)
     -- print("bot script: " .. script_content)
     self.run_bot = Sandbox:LoadActionScript(script_content, candidate_name)
     self.ctx = {}
+    self.candidate_name = candidate_name
 end
 
 function BotScript:OnThink(entity)
-    self.ctx = Sandbox:RunAction(self.run_bot, entity, self.ctx)
+    self.ctx = Sandbox:RunAction(self.run_bot, entity, self.ctx, self.candidate_name)
     return 0.1
 end
 
