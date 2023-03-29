@@ -37,7 +37,7 @@ function Sandbox:LoadScript(user_script, quota, env, candidate_name)
     }
     local results = {pcall(lua_sandbox.protect, user_script, options)}
     if not results[1] then
-        print("load script error: " .. results[2])
+        print("[Sandbox.".. candidate_name ..".script.load]", results[2])
         return nil
     end
     return results[2]
@@ -49,7 +49,7 @@ function Sandbox:RunFunctionWrap(func, candidate_name, ...)
     end
     local results = {pcall(func, ...)}
     if not results[1] then
-        print("[Sandbox.".. candidate_name ..".script]", results[2])
+        print("[Sandbox.".. candidate_name ..".script.run]", results[2])
         return nil
     end
     return results[2]
