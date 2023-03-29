@@ -72,3 +72,4 @@ All other information should be explored by reading the source code!
 - [2023/3/29 15:26] feat: print with `[Sandbox.candidate_name.script]` banner when script got an error.([#35](https://github.com/Escapingbug/dotaxctf/pull/35))
 - [2023/3/29 21:44] fix: remove all nonempty entities after round ends.([#36](https://github.com/Escapingbug/dotaxctf/pull/36))
 - [2023/3/29 22:49] feat: update panel state when round ends.([#37](https://github.com/Escapingbug/dotaxctf/pull/37))
+- [2023/3/30 02:43] feat: print with `[Sandbox.candidate_name.script.load]` banner for loading error log.([#38](https://github.com/Escapingbug/dotaxctf/pull/38))
